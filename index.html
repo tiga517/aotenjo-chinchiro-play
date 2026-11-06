@@ -1,0 +1,1327 @@
+<title>青天井チンチロ 縦画面版</title>
+<style>
+/* 藍の帯の中央に、180×320を整数倍したCanvasを置く */
+:root{color-scheme:dark;--ink0:#080f23;--ai:#14224f}
+html,body{height:100%}
+body{margin:0;background:var(--ink0);overflow:hidden}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  box-sizing:border-box}
+#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:pixelated;touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer}
+#game:focus-visible{outline:2px solid #f8aa43}
+#live{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+</style>
+<div id="stage"><canvas id="game" width="180" height="320" tabindex="0" role="application" aria-label="青天井チンチロ。数字キーで札を選び、スペースキーで主な操作を進めます。"></canvas></div>
+<div id="live" aria-live="polite"></div>
+<script>
+/* font-data */
+// tools/make_font.py が生成。手で編集しない。
+const FONT={"height":10,"glyphs":{" ":[5,"AAAAAAAAAA=="],"!":[5,"AAhCEIAgAA=="],"\"":[5,"ApSlAAAAAA=="],"#":[5,"ABSvK8pQAA=="],"$":[5,"AAjqccriAA=="],"%":[5,"ADGBMgYwAA=="],"&":[5,"ABFKItRQAA=="],"'":[5,"AQhCAAAAAA=="],"(":[5,"AIhEIQQggA=="],")":[5,"BBCCEIhEAA=="],"*":[5,"AACieIoAAA=="],"+":[5,"AABCeIQAAA=="],",":[5,"AAAAAAAiAA=="],"-":[5,"AAAAeAAAAA=="],".":[5,"AAAAAABAAA=="],"/":[5,"AAQiEQiEAA=="],"0":[5,"ABkralJgAA=="],"1":[5,"AAjKEIQgAA=="],"2":[5,"ABkhERDwAA=="],"3":[5,"ADwiMFJgAA=="],"4":[5,"AAjKU8QgAA=="],"5":[5,"AD0OCFJgAA=="],"6":[5,"ABkOSlJgAA=="],"7":[5,"ADwiEQhAAA=="],"8":[5,"ABkpMlJgAA=="],"9":[5,"ABkpScJgAA=="],":":[5,"AAACAAQAAA=="],";":[5,"AAACAARAAA=="],"<":[5,"AAREQQQQAA=="],"=":[5,"AAAPA8AAAA=="],">":[5,"ACCCCIiAAA=="],"?":[5,"ADghEQBAAA=="],"@":[5,"ABkrUtBwAA=="],"A":[5,"ABkpelKQAA=="],"B":[5,"ADkpclLgAA=="],"C":[5,"ABkoQhBwAA=="],"D":[5,"ADkpSlLgAA=="],"E":[5,"AD0IchDwAA=="],"F":[5,"AD0IchCAAA=="],"G":[5,"AB0IWlJwAA=="],"H":[5,"ACUpelKQAA=="],"I":[5,"ABxCEIRwAA=="],"J":[5,"AAQhClJgAA=="],"K":[5,"ACVMYpKQAA=="],"L":[5,"ACEIQhDwAA=="],"M":[5,"ACVtSlKQAA=="],"N":[5,"ACWrSlKQAA=="],"O":[5,"ABkpSlJgAA=="],"P":[5,"ADkpS5CAAA=="],"Q":[5,"ABkpSlJiAA=="],"R":[5,"ADkpclKQAA=="],"S":[5,"AB0IMELgAA=="],"T":[5,"AD5CEIQgAA=="],"U":[5,"ACUpSlJgAA=="],"V":[5,"ACUpSlTAAA=="],"W":[5,"ACta1UpQAA=="],"X":[5,"ACUpMlKQAA=="],"Y":[5,"ACUpUQhAAA=="],"Z":[5,"ADwiIhDwAA=="],"[":[5,"A5CEIQhDgA=="],"\\":[5,"ACEEIIQQgA=="],"]":[5,"BwhCEIQnAA=="],"^":[5,"ARUQAAAAAA=="],"_":[5,"AAAAAAAHgA=="],"`":[5,"AhBCAAAAAA=="],"a":[5,"AAAGCdJwAA=="],"b":[5,"ACEOSlLgAA=="],"c":[5,"AAAGShBwAA=="],"d":[5,"AAQnSlJwAA=="],"e":[5,"AAAGS9BwAA=="],"f":[5,"AAyEeQhAAA=="],"g":[5,"AAAHSlJwgA=="],"h":[5,"ACEOSlKQAA=="],"i":[5,"AQAGEIRwAA=="],"j":[5,"AQAGEIQhAA=="],"k":[5,"ACEJUxSQAA=="],"l":[5,"ABhCEIQwAA=="],"m":[5,"AAAPVrWoAA=="],"n":[5,"AAAOSlKQAA=="],"o":[5,"AAAGSlJgAA=="],"p":[5,"AAAOSlLkAA=="],"q":[5,"AAAHSlJwgA=="],"r":[5,"AAALYhCAAA=="],"s":[5,"AAAHQYLgAA=="],"t":[5,"ABCPIQgwAA=="],"u":[5,"AAAJSlJwAA=="],"v":[5,"AAAJSlTAAA=="],"w":[5,"AAAK1qpQAA=="],"x":[5,"AAAJSZKQAA=="],"y":[5,"AAAJSlJwgA=="],"z":[5,"AAAPERDwAA=="],"{":[5,"AZCEQQhBgA=="],"|":[5,"AQhCEIQhAA=="],"}":[5,"BghCCIQmAA=="],"~":[5,"ABVAAAAAAA=="],"¥":[5,"ACVEeR5AAA=="],"±":[5,"ABCPIQDwAA=="],"×":[5,"AAEpMlIAAA=="],"、":[10,"AAAAAAAAAAAAAEAIAA=="],"。":[10,"AAAAAAAAAAMBIEgMAA=="],"あ":[10,"EAQP+EA+GUqKonEBgA=="],"い":[10,"AAAEAQSBICgJIjAAAA=="],"う":[10,"AAYAYAAeGEAQBAYGAA=="],"え":[10,"AAYAYAB+AQCAUCQw4A=="],"か":[10,"EAQBE+QkiSJJEEQGAA=="],"が":[10,"EQUhI+AlCUJJEkQGAA=="],"き":[10,"CALHwBb+AQOhGEAPAA=="],"く":[10,"AAEAgEAgCAEAIAQBAA=="],"け":[10,"AhCEIn6CIIgiCEQWAA=="],"こ":[10,"AAAD4AAAAAIBAEEPgA=="],"ご":[10,"AAAH0AICAEQCAIIfAA=="],"さ":[10,"BAEAW/gCB0IwgBADgA=="],"し":[10,"AAgCAIBAEAQRBCIHAA=="],"じ":[10,"AAhCSIhAEAQRBCIHAA=="],"す":[10,"BAEP+BAcCQJAcAgMAA=="],"せ":[10,"AgiCIJ76CIJggCAHwA=="],"そ":[10,"AA/AIBAIH+CAQBADwA=="],"た":[10,"EAQP4EAXiAIgkEQQ4A=="],"だ":[10,"IQkvoIAvEARBIIghwA=="],"ち":[10,"EAQBe+AQC4MQBAIHAA=="],"っ":[10,"AAAAAAAMHIAQBAIHAA=="],"つ":[10,"AAABw4gBAEAQGDgAAA=="],"て":[10,"AAAB+5AIBAEAQAgBgA=="],"で":[10,"AAAB+6ARCSIggBADAA=="],"と":[10,"AAQBAEALAwEAgCAHwA=="],"ど":[10,"AQkiIIAWBgIBAEAPgA=="],"な":[10,"EARPyIBCEIjiTBKDAA=="],"に":[10,"AAgCeQBAEQSBICeIAA=="],"の":[10,"AAAB4KRIoikKQmEBgA=="],"は":[10,"AhCEIn6CIIjiTFKTAA=="],"ば":[10,"AREkIn6CIIjiTFKTAA=="],"び":[10,"AQEvIEAiCMQpCEQOAA=="],"へ":[10,"AAAAAAA4EQggBgAAAA=="],"ま":[10,"BAEP+BB/AQPBGEUOAA=="],"み":[10,"AB4AkCQJH8kaRGIDAA=="],"む":[10,"EAQPkEJwJAkBhCEHgA=="],"め":[10,"BAkCQPhlKiqKQmEBgA=="],"も":[10,"CAIH8CAIH8EARBEDgA=="],"や":[10,"BAkCQLzyhCEwIAgCAA=="],"よ":[10,"CAIAgDwIAgPBGEUOAA=="],"ら":[10,"AAwAwABAF4YQBAIPAA=="],"り":[10,"AAiCIIgiCoEgCAQGAA=="],"る":[10,"AA+AQCAcGIGQlCYHAA=="],"れ":[10,"IAgCY6QxCEYiiCIIYA=="],"わ":[10,"IAgCY6QwiCYKgiEJgA=="],"を":[10,"CAIH8EAZiYSgSBADwA=="],"ん":[10,"AAIAgEAQBgJAkkSQwA=="],"ゴ":[10,"CQEv4AgCAIAgCP4AgA=="],"シ":[10,"AAwAwAJghkAQCAwMAA=="],"ス":[10,"AAAH4AgCAQBAKDEwQA=="],"ゾ":[10,"CQEoAgRBEIAgEBgYAA=="],"ト":[10,"AAgCAIAwCwIwgCAIAA=="],"ノ":[10,"AAAAEAQBAIAgEBgYAA=="],"ヒ":[10,"ABAEAQxMHAQBAEAPwA=="],"ピ":[10,"AxEkSQxMHAQBAEAPwA=="],"フ":[10,"AAAH+AIAgCAQBAYOAA=="],"ベ":[10,"AABASAgwEghACAGAAA=="],"マ":[10,"AAAH+AIBCIFAIAQAgA=="],"ミ":[10,"AA4AcAAYAYAAADgBwA=="],"ョ":[10,"AAAAAAAAD4Ag+AIPgA=="],"ル":[10,"AAIEgSBIkiSRJIojAA=="],"ロ":[10,"AAAH+QJAkCQJAn+QIA=="],"ン":[10,"AAAGAGIAgEAQCAwMAA=="],"一":[10,"AAAAAAAAv+AAAAAAAA=="],"万":[10,"AD/hAEAfCEIRBEIDAA=="],"上":[10,"CAIAgCAPAgCAIAg/4A=="],"下":[10,"AD/ggCAMAoCQIAgCAA=="],"中":[10,"CAIP+iKIoi/4IAgCAA=="],"丼":[10,"IgiP+IgyCoIj/kIQgA=="],"了":[10,"AD/gEAgMAgCAIAgOAA=="],"予":[10,"AA+AIBAIP+CIJAgGAA=="],"井":[10,"IgiCI/4iCI/4iEIQgA=="],"京":[10,"CAIP+AB/EEfwIEkmIA=="],"今":[10,"AAcCIQS+gAfwBAIHAA=="],"以":[10,"ABBFESRBEEUjiA0MIA=="],"低":[10,"AAvikSTPkkSJMkAX4A=="],"使":[10,"AgiD+QjflKX5CEUWIA=="],"個":[10,"AAfjKX7SleVJXlCX4A=="],"倍":[10,"AgiD+STJF+QBflCX4A=="],"借":[10,"CQpD+STJH+SJPkiT4A=="],"備":[10,"CQpD+STflAX5yl+UoA=="],"億":[10,"AgiD+STfkiT5CCiToA=="],"兆":[10,"BAUJSVQUDUVKUCSx4A=="],"入":[10,"AB4AgCAIAgFAkEIgYA=="],"全":[10,"AAcCIQT/ggfwIAg/4A=="],"六":[10,"CAIAg/4AAAIQhECgIA=="],"出":[10,"CAIEkSR/AgCCIoi/4A=="],"分":[10,"AAvCEQRAr+kQRCEJgA=="],"切":[10,"ABfkSVJksSSJInEBgA=="],"初":[10,"ABfkS9IUiSSLolCUwA=="],"利":[10,"AAYuKIr6iKMpqqCIYA=="],"到":[10,"AD4iKSr6iK+oiiC+YA=="],"加":[10,"IAgCO+pKkqSqKoqM4A=="],"勝":[10,"Ajqr+5S/qk5K/qiswA=="],"半":[10,"CAIEkKgIP+CD/ggCAA=="],"卓":[10,"CAIA8CA/CEPwhP+CAA=="],"即":[10,"AD3pS9KUpS9KkpW7AA=="],"参":[10,"EAiH8CD/iIzQwgYeAA=="],"双":[10,"AD/hCVJUiUJRSI0MIA=="],"取":[10,"AD/kieJKnqSRJPqDIA=="],"受":[10,"AB/CUEj/oCfgiBw44A=="],"可":[10,"AD/gEeRJEkSR5AEAwA=="],"同":[10,"AD/oCvqAr6oqir6gYA=="],"回":[10,"AD/oCvqiqKoq+oC/4A=="],"垓":[10,"AhCF+5JJEoRJJOYGYA=="],"場":[10,"ABPEk7xJE+SBfuqFYA=="],"増":[10,"CRCF+8pflKX5IuiD4A=="],"士":[10,"CAIAg/4IAgCAIAgfwA=="],"壱":[10,"CAIP+CD/qCpo4CEPwA=="],"多":[10,"CAIB4YgThy6IFAYOAA=="],"大":[10,"CAIAg/4IAgCAUCIwYA=="],"天":[10,"AD/ggCB/AgCAUCIwYA=="],"好":[10,"ABPkC8RSFIr7iFIRgA=="],"始":[10,"BBEEi8JflAr7oliT4A=="],"完":[10,"CAIP+gI+AA/4UCSx4A=="],"定":[10,"CAIP+gJ/AgLwoDgx4A=="],"小":[10,"CAIAgSRJEiiKIggGAA=="],"居":[10,"AB/kCf5EH+RCfpCH4A=="],"届":[10,"AB/kCf5CF+UqfpKH4A=="],"屋":[10,"AB/kCf5RH8RKfIQP4A=="],"己":[10,"AB/AEAR/EAQBAkCf4A=="],"店":[10,"BAEH+RBHkQX6QpCH4A=="],"度":[10,"BAEH+SR/kkvyRA4cYA=="],"座":[10,"BAEH+URRGqRC/oQP4A=="],"延":[10,"ADhi4QjjioqhPrAj4A=="],"弐":[10,"BB0gS/4CHIAQBBy4IA=="],"引":[10,"ADxBEETxIE8QRBEYQA=="],"張":[10,"ADvig76IJ+6gqikzIA=="],"当":[10,"CAIEiKQIH+AJ/gCf4A=="],"役":[10,"ABPIkCQRkA3xJEYWYA=="],"後":[10,"BBIJECgkl+yRVEYWYA=="],"息":[10,"CAQH8QR/EEfwEFEnoA=="],"成":[10,"BAEn+Qh6kqSRZIKjIA=="],"戦":[10,"EiqlK/6qPqqT9CKJIA=="],"所":[10,"ADxgY9CXpU9SJIkgQA=="],"打":[10,"ABfkE4RBEEYTBEExwA=="],"払":[10,"ABEEQ9BEEkaTJFK3IA=="],"投":[10,"ABPEk+RJkAbzJEY2YA=="],"択":[10,"ABPki6JPkkaTJFC0IA=="],"押":[10,"ABflK8pflKcrfkIwgA=="],"持":[10,"BBEF+5BfkE35BFEywA=="],"振":[10,"ABflA95QF+ajKkk3IA=="],"揃":[10,"CRCF+4BelKfrSl60oA=="],"換":[10,"ABPFE/5Ulu0J/kU2IA=="],"数":[10,"AiqLO/JqqK/RJHKjIA=="],"新":[10,"IAnvwVBXv0JT1GkqQA=="],"方":[10,"EAQP+EAQD8IRBEEDgA=="],"早":[10,"AB/EEfxBH8CD/ggCAA=="],"普":[10,"EgUP+VQUP+QR/EEfwA=="],"書":[10,"CB/Ak/4JP+AB/EEfwA=="],"最":[10,"AB/EEfxBP+SJ6ks/IA=="],"未":[10,"CAIH8CAIP+CAaCkyIA=="],"本":[10,"CAIP+CAcCoSS+ggCAA=="],"来":[10,"CAIH8CBJCo/4aCkyIA=="],"果":[10,"AB/EkfxJH8CD/ioyYA=="],"極":[10,"AA/iQ/Yumqay6qQP4A=="],"次":[10,"CCIE+CoShIQhCIUmIA=="],"欲":[10,"BBUI+CpipICjyJU+IA=="],"止":[10,"CAIAgCBPEgSBIEg/4A=="],"正":[10,"AD/ggCBIE8SBIEg/4A=="],"残":[10,"Ajyk+chftIv4SiMzIA=="],"消":[10,"AiCFKCyCF+EIflCkYA=="],"深":[10,"ACflUBSZkIH4GEskoA=="],"済":[10,"BCEH+ESOHGHwRL8oQA=="],"満":[10,"BSFF+BSfkIH4SlekIA=="],"溝":[10,"BSFF+BSfkqD4Kl+iIA=="],"澗":[10,"AC7mqO6qn+KouqqroA=="],"火":[10,"CAIAiSSKAgDASCEwIA=="],"点":[10,"CAIA8CB/EEfwAFUioA=="],"率":[10,"CAIP+SQQF0iL/ggCAA=="],"産":[10,"CAIP+EgSH+VBfIQv4A=="],"盤":[10,"IBHvS36UvslJ/FU/4A=="],"目":[10,"AB/EEfxBEEfxBEEfwA=="],"直":[10,"BD/gQPwhL8oS/IA/4A=="],"破":[10,"AjiF+UqSP+pKlKM7IA=="],"確":[10,"AjiF+VKFO+uivqo74A=="],"穣":[10,"AgyN+ST/kkX7KnkToA=="],"突":[10,"CAIP+lIkEOCD/iIwYA=="],"箔":[10,"BBEHeqQCJ+UIflCn4A=="],"算":[10,"BBEHeqR/EEfwiP+QgA=="],"米":[10,"CAIEkKgIP+GgpMiCAA=="],"粘":[10,"AgiKos4iPIL5oqiL4A=="],"精":[10,"AgiL+ogvvIL54q+KIA=="],"素":[10,"CAIP+CB/CQSL/ikyIA=="],"終":[10,"BBEIe+IlEY+YiKwo4A=="],"結":[10,"AhCJ+4gvkA/4oqir4A=="],"続":[10,"AhCI+8gvkA/4oqUqYA=="],"自":[10,"CAQH8QR/EEfxBEEfwA=="],"舞":[10,"IAgH+1R/lU/6pD+wQA=="],"要":[10,"AD/hQfxVFU/4iDww4A=="],"見":[10,"AA/CEPwhCEPwUCSx4A=="],"親":[10,"IAnvyV5UvyJ77GUqYA=="],"負":[10,"AA+EI/xBH8QR/CIwYA=="],"買":[10,"AB/lKf4hD8IQ/BIYYA=="],"貼":[10,"AjyJI86SJI/4Iqir4A=="],"賭":[10,"BDkK+5KlL+6Ifqir4A=="],"購":[10,"BTlL+5S/qq74Kr+qIA=="],"賽":[10,"CAIP+lJ/CIfyij4wYA=="],"足":[10,"AB/EEQR/AgLwoDgx4A=="],"載":[10,"BAlPSJD/qo+qpPqJIA=="],"込":[10,"ACOEIAgCMUSJAKAn4A=="],"返":[10,"ACPkgD4IsqQxMqAn4A=="],"追":[10,"AiEE8CQJM+SJPqAn4A=="],"送":[10,"CSKEAH4CN+RRIqAn4A=="],"通":[10,"ACfkEH4St+UpSqAn4A=="],"進":[10,"BCFE+CQfskSRPqAn4A=="],"達":[10,"AiCF+CQJN+QhfqIn4A=="],"選":[10,"ACdkSCQfsUX5JKAn4A=="],"部":[10,"IAjv6SpLP6Ar6os+gA=="],"酔":[10,"BD0E89TVLmkj/pI8gA=="],"金":[10,"AAcCIfyIn8CBJCo/4A=="],"鉄":[10,"AhqI++giP+IiyCU+IA=="],"長":[10,"AA/CAPwgP+KQlCIeYA=="],"閉":[10,"AD3pS96UvehK+pSpYA=="],"闇":[10,"AD3pS96Uv+lK+pSnYA=="],"降":[10,"ADnripTGLmrzJJ+gQA=="],"限":[10,"ADvqir7Iq+qjKokjIA=="],"青":[10,"CAIP+CB/Ag/5BH8QQA=="],"面":[10,"AD/gg/6ir6oq+qK/4A=="],"音":[10,"CAIH+EgSP+IQ/CEPwA=="],"額":[10,"QBPvIr5Iq+GLvqU+IA=="],"飛":[10,"AB+hM6oqCi/wqkoSYA=="],"高":[10,"CAIP+Ig+AA/6ir6gYA=="]}};
+
+/* engine */
+// ルール本体。画面に依存しない。
+const START_FUNDS=1000, HANDS_PER_TABLE=5, FINAL_TABLE=7;
+const TARGETS=[1500,3000,6000,15000,40000,120000,400000,1500000];
+const targetOf=t=>t<TARGETS.length?TARGETS[t]:TARGETS[TARGETS.length-1]*Math.pow(4,t-TARGETS.length+1);
+const minBetOf=t=>Math.max(10,Math.round(targetOf(t)*0.02/10)*10);
+const PRICE={rewrite:.2,gold:.15,throw:.5,bowl:.3};
+const priceOf=(kind,t)=>Math.max(10,Math.round(targetOf(t)*PRICE[kind]/10)*10);
+const newDice=()=>[0,1,2].map(()=>({faces:[1,2,3,4,5,6],gold:[0,0,0,0,0,0]}));
+const ri=n=>Math.floor(Math.random()*n);
+function rollDie(d){const i=ri(6);return {i,f:d.faces[i],gold:!!d.gold[i]}}
+const rollAll=dice=>dice.map(rollDie);
+function classify(v){
+  const s=[...v].sort((a,b)=>a-b);
+  if(s[0]===s[2])return {kind:'zoro',face:s[0],base:s[0]===1?5:3,name:s[0]===1?'ピンゾロ':s[0]+'のゾロ目'};
+  if(s[0]===4&&s[1]===5&&s[2]===6)return {kind:'shigoro',base:2,name:'シゴロ'};
+  if(s[0]===1&&s[1]===2&&s[2]===3)return {kind:'hifumi',base:2,name:'ヒフミ'};
+  if(s[0]===s[1])return {kind:'eye',eye:s[2],name:'目 '+s[2]};
+  if(s[1]===s[2])return {kind:'eye',eye:s[0],name:'目 '+s[0]};
+  return {kind:'none',name:'目なし'};
+}
+/* 卓ごとの親 */
+const DEALERS={
+  plain:{name:'新米の親',desc:'普通の賽を使う素直な親。'},
+  one:{name:'せっかちな親',desc:'1回しか振らないので、目なしが多い。',throws:1},
+  drunk:{name:'酔った親',desc:'小さい目ばかり。ただしピンゾロは出やすい。',faces:[1,1,2,2,3,3]},
+  six:{name:'六好きの親',desc:'6の面が3つあり、高い目が出やすい。',faces:[1,2,4,6,6,6]},
+  twin:{name:'揃え屋',desc:'2と5しかない賽。4回に1回はゾロ目で即精算。',faces:[2,2,2,5,5,5]},
+  tekka:{name:'鉄火の親',desc:'親の役の精算が、勝っても負けても2倍。',inst:2},
+  greedy:{name:'欲張りの親',desc:'同じ目は親の勝ち。目なし同士も親の勝ち。',tie:true},
+  stubborn:{name:'粘る親',desc:'目3以下が出ると振り直す。',reroll:3},
+  boss:{name:'親分',desc:'6の多い賽で目3以下を振り直し、同じ目も親の勝ち。',faces:[1,3,5,6,6,6],reroll:3,tie:true}
+};
+const dealerInfo=id=>({id,faces:[1,2,3,4,5,6],throws:3,reroll:0,tie:false,inst:1,...DEALERS[id]});
+function makeDealerOrder(){
+  const ids=['one','drunk','six','twin','tekka','greedy','stubborn'].sort(()=>Math.random()-.5);
+  return ['plain',...ids.slice(0,6),'boss'];
+}
+const dealerAt=(order,t)=>dealerInfo(t<order.length?order[t]:order[1+(t%6)]);
+/* 親は役が出るまで振る。目が低いと振り直す親もいる */
+function dealerRolls(dl){
+  const rolls=[],pick=()=>dl.faces[ri(6)];
+  for(let i=0;i<dl.throws;i++){
+    const v=[pick(),pick(),pick()],c=classify(v);rolls.push({v,c});
+    if(c.kind==='none')continue;
+    if(c.kind==='eye'&&c.eye<=dl.reroll&&i<dl.throws-1)continue;
+    break;
+  }
+  return rolls;
+}
+/* 早上がりの利息と闇金 */
+const earlyLeaveBonus=(t,hand)=>(HANDS_PER_TABLE-hand)*Math.round(targetOf(t)*.05/10)*10;
+const loanAmount=t=>Math.max(minBetOf(t)*5,Math.round(targetOf(t)*.5/10)*10);
+const LOAN_RATE=2,DEBT_INTEREST=1.5;
+/* 勝率: 目が親以下なら投げ直す前提の最善手 */
+function standOutcome(eye,dealerEye,tie){return eye>dealerEye?{w:1,d:0,l:0}:(eye===dealerEye&&!tie)?{w:0,d:1,l:0}:{w:0,d:0,l:1}}
+function winDist(dice,throwsLeft,dealerEye,tie=false,memo={}){
+  if(memo[throwsLeft])return memo[throwsLeft];
+  const r={w:0,d:0,l:0};
+  const next=throwsLeft>1?winDist(dice,throwsLeft-1,dealerEye,tie,memo):null;
+  for(const a of dice[0].faces)for(const b of dice[1].faces)for(const c of dice[2].faces){
+    const k=classify([a,b,c]);let o;
+    if(k.kind==='zoro'||k.kind==='shigoro')o={w:1,d:0,l:0};
+    else if(k.kind==='hifumi')o={w:0,d:0,l:1};
+    else if(k.kind==='eye'){o=standOutcome(k.eye,dealerEye,tie);if(next&&(next.w-next.l)>(o.w-o.l))o=next}
+    else o=next||(dealerEye===0&&!tie?{w:0,d:1,l:0}:{w:0,d:0,l:1});
+    r.w+=o.w;r.d+=o.d;r.l+=o.l;
+  }
+  r.w/=216;r.d/=216;r.l/=216;
+  return memo[throwsLeft]=r;
+}
+function zoroChance(dice){let p=0;for(let f=1;f<=6;f++){let q=1;for(const d of dice)q*=d.faces.filter(x=>x===f).length/6;p+=q}return p}
+/* 張りの割合で大盤振る舞いの上限が決まる */
+function capFor(wager,funds){
+  if(wager>=funds)return Infinity;
+  const r=wager/funds;
+  return r>=.5?100:r>=.25?30:10;
+}
+const capLabel=c=>c===Infinity?'青天井':'×'+c;
+/* 大盤振る舞い: 賽を1個足して投げ、当たり目の数だけ倍率と賽が増える */
+function bonusStart(face,base,cap){return {face,M:Math.min(base,cap),cap,n:4,throws:0,done:false,why:''}}
+function bonusThrow(b,dice,deep){
+  const rolls=[];for(let i=0;i<b.n;i++)rolls.push(rollDie(dice[i%3]));
+  let hits=0,raw=0;
+  for(const r of rolls)if(r.f===b.face){raw++;hits+=r.gold?2:1}
+  b.throws++;
+  const shon=Math.min(.5,b.n*.012)*(deep?.5:1);
+  if(raw===0){b.done=true;b.why='miss'}
+  else{
+    b.M=Math.min(b.M*(1+.5*hits),b.cap);
+    b.n=Math.min(48,b.n+raw);
+    if(b.M>=b.cap){b.done=true;b.why='cap'}
+    else if(Math.random()<shon){b.done=true;b.why='shon'}
+  }
+  return {rolls,raw,hits};
+}
+function makeOffers(deep,throwsMax){
+  const nums=[1,2,3,4,5,6].sort(()=>Math.random()-.5);
+  const third=['gold','gold'];
+  if(throwsMax<5)third.push('throw');
+  if(!deep)third.push('bowl');
+  return [{kind:'rewrite',num:nums[0]},{kind:'rewrite',num:nums[1]},{kind:third[ri(third.length)]}];
+}
+
+
+/* sprites */
+// 仮素材のドット絵をプログラムで生成する。全ピクセルがパレット番号なので、色数が保証される。
+const PALETTE={
+  ink0:'#080f23',ink1:'#0c152e',ai:'#14224f',gosu:'#2a4a9c',gosuL:'#6f8fcf',
+  w0:'#351c22',w1:'#52292a',w2:'#833224',w3:'#ba5328',w4:'#d38244',w5:'#ef9f52',
+  sk0:'#be9d87',sk1:'#e6b886',sk2:'#f4d099',
+  wh:'#f6f1e0',wh1:'#d9d6cb',wh2:'#a7a9b8',
+  shu0:'#b1271b',shu1:'#c0401f',
+  kin0:'#cb702d',kin1:'#f8aa43',kin2:'#fce4a4',
+  gr0:'#674d52',gr1:'#735c62'
+};
+const NAMES=Object.keys(PALETTE);
+const C=Object.fromEntries(NAMES.map((n,i)=>[n,i]));
+const T=255;
+function mk(w,h){return {w,h,px:new Uint8Array(w*h).fill(T)}}
+const put=(s,x,y,c)=>{if(x>=0&&y>=0&&x<s.w&&y<s.h)s.px[y*s.w+x]=c};
+const get=(s,x,y)=>(x>=0&&y>=0&&x<s.w&&y<s.h)?s.px[y*s.w+x]:T;
+function rect(s,x,y,w,h,c){for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)put(s,i,j,c)}
+function ell(s,cx,cy,rx,ry,c){
+  for(let y=Math.floor(cy-ry);y<=cy+ry;y++)for(let x=Math.floor(cx-rx);x<=cx+rx;x++){
+    const a=(x+.5-cx)/rx,b=(y+.5-cy)/ry;if(a*a+b*b<=1)put(s,x,y,c)}
+}
+function outline(s,c){
+  const o=s.px.slice();
+  for(let y=0;y<s.h;y++)for(let x=0;x<s.w;x++){
+    if(o[y*s.w+x]===T)continue;
+    const edge=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const X=x+a,Y=y+b;return X<0||Y<0||X>=s.w||Y>=s.h||o[Y*s.w+X]===T});
+    if(edge)s.px[y*s.w+x]=c;
+  }
+}
+
+/* ---- 賽 ---- */
+// 面の番号は engine の faces 配列と同じ。未改造なら 1〜6 が 0〜5 に入る。
+// 向かい合う面は 0-5、1-4、2-3 なので、未改造の賽は対面の和が7になる。
+const OPPOSITE=[5,4,3,2,1,0];
+const RING=[[2,1,3,4],[0,2,5,3],[1,0,4,5],[5,4,0,1],[3,5,2,0],[4,3,1,2]];
+const sideFaces=(top,k)=>[RING[top][k%4],RING[top][(k+1)%4]];
+const PIP_UV={
+  1:[[.5,.5]],
+  2:[[.27,.27],[.73,.73]],
+  3:[[.24,.24],[.5,.5],[.76,.76]],
+  4:[[.27,.27],[.73,.27],[.27,.73],[.73,.73]],
+  5:[[.24,.24],[.76,.24],[.5,.5],[.24,.76],[.76,.76]],
+  6:[[.27,.2],[.73,.2],[.27,.5],[.73,.5],[.27,.8],[.73,.8]]
+};
+// 48個まで増えた時の 9×9 平面の賽。内側 7×7 の座標で目を固定する。
+const S_PIPS={
+  1:[[3,2],[2,3],[3,3],[4,3],[3,4]],
+  2:[[1,1],[5,5]],
+  3:[[1,1],[3,3],[5,5]],
+  4:[[1,1],[5,1],[1,5],[5,5]],
+  5:[[1,1],[5,1],[3,3],[1,5],[5,5]],
+  6:[[1,1],[5,1],[1,3],[5,3],[1,5],[5,5]]
+};
+const applyState=(s,state)=>{
+  if(state==='dim'){
+    const map={[C.wh]:C.wh2,[C.wh1]:C.gr1,[C.wh2]:C.gr0,[C.ink0]:C.w0,[C.shu1]:C.gr0,[C.kin1]:C.kin0,[C.kin2]:C.kin0,[C.kin0]:C.gr0};
+    for(let i=0;i<s.px.length;i++)if(map[s.px[i]]!==undefined)s.px[i]=map[s.px[i]];
+  }else if(state==='hit')outline(s,C.shu1);
+  return s;
+};
+function flatDie(n,state='normal',gold=false){
+  const s=mk(9,9);
+  rect(s,1,0,7,9,gold?C.kin1:C.wh);rect(s,0,1,9,7,gold?C.kin1:C.wh);
+  rect(s,1,8,7,1,gold?C.kin0:C.wh1);
+  outline(s,C.ink0);
+  const pip=n===1?C.shu1:C.ink0;
+  for(const [x,y] of S_PIPS[n])put(s,x+1,y+1,pip);
+  return applyState(s,state);
+}
+// 上面は正方形に近い面をそのまま描き、目の形を崩さない。手前と右は細い帯で見せる。
+const cubeGeom=W=>{const c=Math.round(W*.2),a=W-c,top=Math.round(a*.86),b=Math.round(W*.24);return {a,c,top,b,H:top+b}};
+function paintFace(s,x,y,u,v,fw,fh,n,gold,base,edge,r){
+  let c=gold?(base===C.wh?C.kin1:C.kin0):base;
+  if(!gold&&edge)c=edge;
+  const rr=n===1?r*1.7:r;
+  for(const [pu,pv] of PIP_UV[n]){
+    const a=(u-pu)*fw,b=(v-pv)*fh;
+    if(a*a+b*b<=rr*rr){c=n===1?C.shu1:C.ink0;break}
+  }
+  put(s,x,y,c);
+}
+// W は横幅。見えている3面すべてを実際の面データから描く。
+function cubeDie(W,topVal,leftVal,rightVal,state='normal',gold=[false,false,false]){
+  const {a,c,top,b,H}=cubeGeom(W),s=mk(W,H),r=W>=26?2.1:1.25,rs=W>=26?1.2:.8;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const px=x+.5,py=y+.5;
+    if(x<a&&y<top){
+      if((x<1&&y<1)||(x>=a-1&&y<1))continue;
+      paintFace(s,x,y,px/a,py/top,a,top,topVal,gold[0],C.wh,null,r);
+    }else if(x<a){
+      if(x<1&&y>=H-1)continue;
+      paintFace(s,x,y,px/a,(py-top)/b,a,b,leftVal,gold[1],C.wh1,y>=H-1?C.wh2:null,rs);
+    }else{
+      const off=x-a,cut=Math.min(c,off+1);
+      if(y<cut||y>=H-(c-cut)-1+1&&y>=H-(c-off))continue;
+      if(y>=H-off)continue;
+      paintFace(s,x,y,(px-a)/c,(py-cut)/(H-cut-off),c,H-cut-off,rightVal,gold[2],C.wh2,null,rs);
+    }
+  }
+  outline(s,C.ink0);
+  return applyState(s,state);
+}
+
+/* ---- 丼 ---- */
+const BOWL={w:160,h:104,cx:80,cy:43,rimX:80,rimY:42,innerX:73,innerY:36,depth:19};
+function inEll(x,y,cx,cy,rx,ry){const a=(x+.5-cx)/rx,b=(y+.5-cy)/ry;return a*a+b*b<=1}
+function waveMark(x,y,size){
+  // 青海波の繰り返し
+  const r=size,row=Math.floor(y/(r*.75));
+  const ox=(row%2)?r:0;
+  const cellX=((x+ox)%(r*2)+r*2)%(r*2)-r,cellY=((y%(r*.75))+r*.75)%(r*.75);
+  const d=Math.sqrt(cellX*cellX+(cellY-r*.75)*(cellY-r*.75));
+  return Math.abs(d-r*.72)<.75||Math.abs(d-r*.38)<.7;
+}
+function bowlBack(){
+  const b=BOWL,s=mk(b.w,b.h);
+  for(let y=0;y<b.h;y++)for(let x=0;x<b.w;x++){
+    if(!inEll(x,y,b.cx,b.cy,b.rimX,b.rimY))continue;
+    if(!inEll(x,y,b.cx,b.cy,b.innerX,b.innerY)){put(s,x,y,C.wh);continue}
+    // 内側: 奥の壁は影、底は明るい。手打ち風の市松ディザで段階をつなぐ
+    const depth=(y-(b.cy-b.innerY))/(b.innerY*2),checker=(x+y)%2===0;
+    const floor=inEll(x,y,b.cx,b.cy+5,b.innerX*.68,b.innerY*.66);
+    let c=C.wh;
+    if(floor)c=depth<.42&&checker?C.wh1:C.wh;
+    else if(depth<.3)c=checker?C.wh2:C.wh1;
+    else if(depth<.55)c=checker?C.wh1:C.wh;
+    else c=checker&&depth<.75?C.wh1:C.wh;
+    if(!floor&&depth<.62&&waveMark(x,y,11)&&(x<b.cx-16||x>b.cx+16))c=C.gosu;
+    put(s,x,y,c);
+  }
+  return s;
+}
+function bowlFront(){
+  const b=BOWL,s=mk(b.w,b.h);
+  for(let y=b.cy;y<b.h;y++)for(let x=0;x<b.w;x++){
+    const rim=inEll(x,y,b.cx,b.cy,b.rimX,b.rimY),inner=inEll(x,y,b.cx,b.cy,b.innerX,b.innerY);
+    const body=inEll(x,y,b.cx,b.cy+b.depth,b.rimX-5,b.rimY);
+    if(rim&&!inner){put(s,x,y,C.wh);continue}
+    if(!rim&&body){
+      const edge=Math.abs(x-b.cx)/(b.rimX-5),low=y>b.h-9;
+      let c=edge>.82||low?((x+y)%2?C.wh2:C.wh1):C.wh;
+      if(waveMark(x,y,9)&&y>b.cy+b.rimY+1)c=C.gosu;
+      put(s,x,y,c);
+    }
+  }
+  for(let a=0;a<720;a++){
+    const th=a/720*Math.PI;
+    put(s,Math.round(b.cx+Math.cos(th)*(b.rimX-3)),Math.round(b.cy+Math.sin(th)*(b.rimY-3)),C.gosu);
+  }
+  // 外周だけ輪郭を付ける
+  const o=s.px.slice(),isOut=(x,y)=>{
+    if(x<0||x>=b.w||y>=b.h)return true;
+    if(y<b.cy)return false;
+    return o[y*b.w+x]===T&&!inEll(x,y,b.cx,b.cy,b.innerX,b.innerY);
+  };
+  for(let y=b.cy;y<b.h;y++)for(let x=0;x<b.w;x++){
+    if(o[y*b.w+x]===T)continue;
+    if(isOut(x+1,y)||isOut(x-1,y)||isOut(x,y+1))s.px[y*b.w+x]=C.ink0;
+  }
+  return s;
+}
+function bowlRimBack(){
+  const b=BOWL,s=mk(b.w,b.h);
+  for(let a=0;a<720;a++){
+    const th=Math.PI+a/720*Math.PI;
+    put(s,Math.round(b.cx+Math.cos(th)*(b.rimX-3)),Math.round(b.cy+Math.sin(th)*(b.rimY-3)),C.gosu);
+    put(s,Math.round(b.cx+Math.cos(th)*(b.rimX-.5)),Math.round(b.cy+Math.sin(th)*(b.rimY-.5)),C.ink0);
+  }
+  return s;
+}
+
+/* ---- 卓と背景 ---- */
+function wood(w,h,seed=0,cols=[C.w1,C.w2,C.w0]){
+  const s=mk(w,h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const n=Math.sin(x*.05+Math.sin((y+seed)*.55)*2.2+(y+seed)*.9)+Math.sin((x+seed)*.017+(y+seed)*2.1)*.7;
+    put(s,x,y,n>.75?cols[1]:n<-.9?cols[2]:cols[0]);
+  }
+  return s;
+}
+function lantern(s,lx,ly){
+  rect(s,lx+8,0,1,ly,C.w0);
+  rect(s,lx,ly,18,24,C.w0);rect(s,lx+1,ly+1,16,22,C.kin0);
+  for(let y=ly+1;y<ly+23;y++)for(let x=lx+1;x<lx+17;x++){
+    if(x>lx+4&&x<lx+13&&y>ly+5&&y<ly+19&&(x+y)%2===0)put(s,x,y,C.kin1);
+    if(x>lx+6&&x<lx+11&&y>ly+8&&y<ly+16)put(s,x,y,C.kin2);
+  }
+  rect(s,lx+8,ly+1,1,22,C.w1);rect(s,lx+1,ly+11,16,1,C.w1);
+}
+function backdrop(w,h){
+  const s=mk(w,h);
+  rect(s,0,0,w,h,C.ink1);
+  for(let x=4;x<w;x+=12)rect(s,x,0,2,h,C.ink0);
+  rect(s,0,Math.max(0,h-14),w,1,C.w0);
+  lantern(s,12,Math.max(4,h-36));
+  if(h>=70)lantern(s,w-30,Math.max(4,h-46));
+  if(h>=56){
+    // 暖簾
+    const nh=Math.min(30,Math.floor(h*.32));
+    rect(s,0,0,w,nh,C.ai);
+    for(let y=0;y<nh;y++)for(let x=0;x<w;x++){
+      if(waveMark(x,y,10)&&y>nh*.25)put(s,x,y,C.gosu);
+      if(x%45===44)put(s,x,y,C.ink0);
+    }
+    rect(s,0,nh,w,1,C.ink0);
+  }
+  return s;
+}
+const DEALER_EXPR=['normal','smug','worried','shock'];
+const ROBES={plain:C.ai,one:C.gosu,drunk:C.gr0,six:C.w2,twin:C.gr1,tekka:C.shu0,greedy:C.kin0,stubborn:C.w1,boss:C.ink1};
+function dealerSprite(expr='normal',id='plain'){
+  const s=mk(96,48),sk=C.sk1,robe=ROBES[id]??C.ai;
+  // 胴
+  ell(s,48,50,40,27,robe);
+  for(let i=0;i<8;i++){const x=14+i*10;for(let y=30;y<48;y++)if((x+y)%7===0)put(s,x+(y%3),y,id==='boss'?C.kin0:C.gosu)}
+  for(let i=0;i<14;i++){put(s,48-i,31+i,C.wh);put(s,47-i,31+i,C.wh);put(s,48+i,31+i,C.wh);put(s,49+i,31+i,C.wh)}
+  for(let i=0;i<12;i++){rect(s,49-i,32+i,Math.max(1,2*i-1),1,C.sk0)}
+  rect(s,44,26,8,7,C.sk0);
+  // 頭
+  ell(s,48,18,12,13,sk);
+  for(let y=8;y<30;y++)for(let x=54;x<61;x++)if(get(s,x,y)===sk&&(x+y)%2===0&&x>56)put(s,x,y,C.sk0);
+  // 髪と髷
+  ell(s,48,10,13,8,C.ink0);rect(s,35,10,3,9,C.ink0);rect(s,58,10,3,9,C.ink0);
+  rect(s,44,1,8,4,C.ink0);rect(s,46,0,4,2,C.kin0);
+  rect(s,37,12,23,3,sk);rect(s,39,11,18,1,sk);
+  // 表情
+  const eye=C.ink0;
+  if(expr==='shock'){rect(s,41,16,4,4,C.wh);rect(s,51,16,4,4,C.wh);rect(s,42,17,2,2,eye);rect(s,52,17,2,2,eye);ell(s,48,26,3,3,C.w0)}
+  else if(expr==='worried'){
+    put(s,40,16,eye);put(s,41,15,eye);put(s,42,14,eye);put(s,56,16,eye);put(s,55,15,eye);put(s,54,14,eye);
+    rect(s,41,18,3,2,eye);rect(s,52,18,3,2,eye);rect(s,45,26,6,1,C.w1);put(s,44,27,C.w1);put(s,51,27,C.w1);
+    rect(s,58,18,1,3,C.gosuL);
+  }else if(expr==='smug'){
+    rect(s,40,14,5,1,eye);rect(s,52,14,5,1,eye);rect(s,41,18,3,1,eye);rect(s,52,18,3,1,eye);
+    rect(s,44,25,8,1,C.w1);put(s,43,24,C.w1);put(s,52,24,C.w1);
+  }else{
+    rect(s,40,15,5,1,eye);rect(s,52,15,5,1,eye);rect(s,41,18,3,2,eye);rect(s,52,18,3,2,eye);rect(s,45,25,6,1,C.w1);
+  }
+  rect(s,47,20,2,3,C.sk0);
+  // 親ごとの目印（仮素材）
+  if(id==='tekka')rect(s,36,11,24,2,C.wh);
+  if(id==='twin'){rect(s,39,16,7,1,C.ink0);rect(s,50,16,7,1,C.ink0);rect(s,39,20,7,1,C.ink0);rect(s,50,20,7,1,C.ink0);rect(s,46,18,4,1,C.ink0)}
+  if(id==='drunk'){rect(s,38,21,4,2,C.shu1);rect(s,54,21,4,2,C.shu1)}
+  if(id==='greedy')rect(s,62,30,6,6,C.kin2);
+  if(id==='stubborn'){rect(s,35,10,26,3,C.wh2);rect(s,44,1,8,4,C.wh2)}
+  if(id==='boss'){rect(s,33,6,3,4,C.kin1);rect(s,60,6,3,4,C.kin1);rect(s,40,31,16,1,C.kin1)}
+  if(id==='six')rect(s,70,30,6,6,C.wh);
+  if(id==='one')rect(s,41,12,14,1,C.sk0);
+  // 手。驚くと拳になる
+  for(const hx of [20,76]){
+    ell(s,hx,42,9,6,sk);
+    if(expr==='shock'){rect(s,hx-7,41,14,6,sk);for(let f=-5;f<=5;f+=3)rect(s,hx+f,42,1,4,C.sk0);continue}
+    for(let f=-6;f<=6;f+=4)rect(s,hx+f-1,44,2,4,sk);
+    for(let f=-4;f<=6;f+=4)rect(s,hx+f-1,44,1,4,C.sk0);
+  }
+  outline(s,C.ink0);
+  return s;
+}
+
+/* ---- 木札 ---- */
+const TAG_COLS={normal:[C.w5,C.w4,C.w2],sel:[C.kin2,C.kin2,C.kin0],main:[C.kin1,C.kin1,C.kin0],danger:[C.shu0,C.shu0,C.w1],quiet:[C.gr0,C.gr0,C.w0],off:[C.w1,C.w0,C.ink1]};
+function tagSprite(w,h,variant='normal',pressed=false){
+  const s=mk(w,h),[a,b,d]=TAG_COLS[variant]||TAG_COLS.normal;
+  const cut=Math.min(4,Math.floor(h/5));
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const c=Math.max(0,cut-y);
+    if(x<c||x>=w-c)continue;
+    const n=Math.sin(x*.09+Math.sin(y*.8)*2+y*1.2);
+    let col=n>.8?b:a;
+    if(y>=h-3&&!pressed)col=d;
+    put(s,x,y,col);
+  }
+  outline(s,C.ink0);
+  return s;
+}
+
+/* ---- 大盤振る舞いの放射。8コマで1周する ---- */
+function raysSprite(w,h,cx,cy,frame,a,b=T,wedges=16){
+  const s=mk(w,h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const t=(Math.atan2(y+.5-cy,x+.5-cx)/(Math.PI*2)+1)*wedges+frame/8;
+    const c=(t%1)<.5?a:b;
+    if(c!==T)put(s,x,y,c);
+  }
+  return s;
+}
+
+/* font */
+// PixelMplus10 から作ったビットマップ文字。色ごとに1文字ずつキャッシュする。
+
+
+
+const glyphs=new Map();
+function bits(ch){return FONT.glyphs[ch]||FONT.glyphs['?']}
+const charWidth=ch=>bits(ch)[0];
+function textWidth(t,scale=1){let w=0;for(const ch of String(t))w+=charWidth(ch);return w*scale}
+function glyphCanvas(ch,color){
+  const key=ch+'|'+color;let c=glyphs.get(key);if(c)return c;
+  const [w,data]=bits(ch);
+  c=document.createElement('canvas');c.width=w;c.height=FONT.height;
+  const g=c.getContext('2d');g.fillStyle=PALETTE[color];
+  const raw=atob(data);
+  for(let i=0,y=0;y<FONT.height;y++)for(let x=0;x<w;x++,i++){
+    if(raw.charCodeAt(i>>3)&(1<<(7-(i&7))))g.fillRect(x,y,1,1);
+  }
+  glyphs.set(key,c);
+  return c;
+}
+function drawText(ctx,t,x,y,color='wh',scale=1){
+  x=Math.round(x);y=Math.round(y);
+  for(const ch of String(t)){
+    const c=glyphCanvas(ch,color);
+    ctx.drawImage(c,x,y,c.width*scale,c.height*scale);
+    x+=c.width*scale;
+  }
+}
+function wrapText(t,maxW){
+  const out=[];let line='',w=0;
+  for(const ch of String(t)){
+    const cw=charWidth(ch);
+    if(w+cw>maxW&&line&&!'、。'.includes(ch)){out.push(line);line='';w=0}
+    line+=ch;w+=cw;
+  }
+  if(line)out.push(line);
+  return out;
+}
+
+/* game */
+// ランの進行。描画に依存せず、画面へ渡す出来事の配列を返す。
+
+
+function newRun(){
+  const S={table:0,hand:0,funds:START_FUNDS,dice:newDice(),throwsMax:3,deep:false,order:makeDealerOrder(),
+    debt:0,loanTable:-1,loanUsed:false,leftBonus:0,offers:[],picking:null,selected:0,justWon:false,won:false,
+    phase:'ante',ante:0,anteVal:0,wager:0,fundsAtHand:0,stay:0,dealer:null,dealerRoll:null,dist:null,again:null,throwsLeft:0,
+    cur:null,curRolls:null,cap:10,result:null,endReason:'',cleared:false,lastInfo:null,winAtBet:null,
+    log:[],bestMult:0,bonusCount:0,peak:START_FUNDS};
+  beginHand(S);
+  return S;
+}
+const dl=S=>dealerAt(S.order,S.table);
+const goal=(S,t=S.table)=>targetOf(t)+(S.debt&&t>S.loanTable?S.debt:0);
+function beginHand(S){
+  Object.assign(S,{phase:'ante',dealer:null,dealerRoll:null,dist:null,again:null,cur:null,curRolls:null,result:null,wager:0,ante:0,winAtBet:null});
+  S.fundsAtHand=S.funds;S.stay=S.funds>=goal(S)?1:0;
+  S.anteVal=anteOptions(S)[1].amount;
+}
+const up10=x=>Math.ceil(x/10)*10;
+function anteOptions(S){
+  const min=Math.min(S.funds,minBetOf(S.table)),clamp=a=>Math.min(S.funds,Math.max(min,a));
+  return [
+    {label:'最低',amount:min},
+    {label:'1/4',amount:clamp(up10(S.funds/4))},
+    {label:'1/3',amount:clamp(up10(S.funds/3))},
+    {label:'1/2',amount:clamp(up10(S.funds/2))},
+    {label:'全部',amount:S.funds}
+  ];
+}
+function raiseOptions(S){
+  const out=[];
+  [[1,'そのまま'],[2,'2倍'],[3,'3倍']].forEach(([m,label])=>{
+    const w=Math.min(S.ante*m,S.funds);
+    if(out.some(o=>o.w===w))return;
+    out.push({w,label:w>=S.funds?'全賭け':label,cap:capFor(w,S.fundsAtHand)});
+  });
+  return out;
+}
+function settle(S,net,text,kind,events){
+  S.funds=Math.max(0,S.funds+net);
+  S.peak=Math.max(S.peak,S.funds);
+  const rate=Math.abs(net)/Math.max(1,S.wager);
+  const formula=!net||kind==='fold'?'':(net<0&&!Number.isInteger(rate*2)?'払いは所持金までです':{wager:S.wager,rate});
+  S.result={net,text,kind,formula};
+  S.lastInfo={net,kind,pct:Math.round(S.wager/Math.max(1,S.fundsAtHand)*100),win:S.winAtBet};
+  S.log.push({table:S.table,hand:S.hand,net,kind});
+  S.phase='result';
+  events.push({type:'settle',net,funds:S.funds,kind});
+  return events;
+}
+function placeAnte(S,amount){
+  const events=[];
+  S.ante=Math.min(S.funds,Math.max(Math.min(S.funds,minBetOf(S.table)),amount));
+  S.wager=S.ante;S.fundsAtHand=S.funds;
+  const info=dl(S),rolls=dealerRolls(info);
+  for(const r of rolls)events.push({type:'dealerThrow',v:r.v,c:r.c});
+  const c=rolls[rolls.length-1].c;
+  S.dealerRoll=rolls[rolls.length-1].v;
+  if(c.kind==='zoro'||c.kind==='shigoro'){
+    S.dealer=c;
+    const m=c.base*info.inst;
+    return settle(S,-Math.min(S.funds,S.ante*m),`親の${c.name}。賭け金の${m}倍を払います。`,'dealerRole',events);
+  }
+  if(c.kind==='hifumi'){
+    S.dealer=c;
+    const m=2*info.inst;
+    return settle(S,S.ante*m,`親のヒフミ。賭け金の${m}倍をもらいます。`,'dealerRole',events);
+  }
+  S.dealer=c.kind==='none'?{kind:'eye',eye:0,name:'目なし'}:c;
+  S.dist=winDist(S.dice,S.throwsMax,S.dealer.eye,info.tie);
+  S.phase='raise';
+  return events;
+}
+function raise(S,w){
+  S.wager=w;S.cap=capFor(w,S.fundsAtHand);S.throwsLeft=S.throwsMax;S.cur=null;S.winAtBet=S.dist.w;
+  return throwDice(S);
+}
+function fold(S){
+  return settle(S,-Math.min(S.funds,Math.ceil(S.ante/2)),`親の${S.dealer.name}を見て降りました。`,'fold',[]);
+}
+/* 大盤振る舞いの結果を先に決め、画面は1投ずつ再生する */
+function runBonus(S,c,extra){
+  const b=bonusStart(c.face,c.base+extra,S.cap),start=b.M,steps=[];
+  while(!b.done&&b.M<b.cap){
+    const r=bonusThrow(b,S.dice,S.deep);
+    steps.push({rolls:r.rolls,raw:r.raw,hits:r.hits,M:b.M,n:b.n});
+  }
+  S.bestMult=Math.max(S.bestMult,b.M);S.bonusCount++;
+  return {type:'bonus',face:c.face,name:c.name,start,cap:S.cap,steps,M:b.M,why:b.why||'cap'};
+}
+function throwDice(S){
+  const events=[],rolls=rollAll(S.dice),c=classify(rolls.map(r=>r.f)),info=dl(S);
+  S.throwsLeft--;S.cur=c;S.curRolls=rolls;
+  events.push({type:'playerThrow',rolls,c});
+  const extra=rolls.filter(r=>r.gold).length+S.stay;
+  if(c.kind==='zoro'){
+    const ev=runBonus(S,c,extra);
+    events.push(ev);
+    return settle(S,S.wager*ev.M,`${c.name}から大盤振る舞い。`,'bonus',events);
+  }
+  if(c.kind==='shigoro')return settle(S,S.wager*(2+extra),'シゴロで勝ちました。','win',events);
+  if(c.kind==='hifumi')return settle(S,-Math.min(S.funds,S.wager*2),'ヒフミ。賭け金の2倍を払います。','lose',events);
+  if(c.kind==='eye'){
+    if(S.throwsLeft>0){
+      S.again=winDist(S.dice,S.throwsLeft,S.dealer.eye,info.tie);
+      S.phase='decide';
+      return events;
+    }
+    return resolveEye(S,events);
+  }
+  if(S.throwsLeft>0){
+    S.again=winDist(S.dice,S.throwsLeft,S.dealer.eye,info.tie);
+    S.phase='throw';
+    return events;
+  }
+  if(S.dealer.eye===0&&!info.tie)return settle(S,0,'双方とも目なしで引き分けです。','draw',events);
+  return settle(S,-Math.min(S.funds,S.wager),'目なしのまま振り切りました。','lose',events);
+}
+function resolveEye(S,events){
+  const c=S.cur,d=S.dealer,info=dl(S),extra=S.curRolls.filter(r=>r.gold).length+S.stay,o=standOutcome(c.eye,d.eye,info.tie);
+  if(o.w)return settle(S,S.wager*(1+extra),`${c.name}で親の${d.name}に勝ちました。`,'win',events);
+  if(o.d)return settle(S,0,`${c.name}で親と同じ。引き分けです。`,'draw',events);
+  return settle(S,-Math.min(S.funds,S.wager),`${c.name}で親の${d.name}に負けました。`,'lose',events);
+}
+const stand=S=>resolveEye(S,[]);
+function nextHand(S){
+  if(S.funds<=0)return lose(S,'破産しました');
+  S.hand++;
+  if(S.hand>=HANDS_PER_TABLE)return S.funds>=goal(S)?enterShop(S):lose(S,'ノルマに届きませんでした');
+  if(S.funds<minBetOf(S.table))return S.funds>=goal(S)?enterShop(S):lose(S,'最低の賭け金に届きません');
+  beginHand(S);
+  return [];
+}
+function leaveEarly(S){
+  const b=earlyLeaveBonus(S.table,S.hand);
+  S.funds+=b;S.peak=Math.max(S.peak,S.funds);S.leftBonus=b;
+  return enterShop(S);
+}
+function lose(S,reason){
+  S.cleared=false;S.endReason=reason;S.phase='end';
+  return [{type:'end'}];
+}
+function enterShop(S){
+  S.cleared=true;
+  if(S.debt&&S.table>S.loanTable)S.debt=Math.floor(S.debt*DEBT_INTEREST/10)*10;
+  S.justWon=S.table===FINAL_TABLE&&!S.won;
+  if(S.justWon)S.won=true;
+  S.offers=makeOffers(S.deep,S.throwsMax);S.picking=null;S.selected=0;S.phase='shop';
+  return [{type:'shop'}];
+}
+const offerPrice=(S,o)=>priceOf(o.kind,S.table);
+/* 面を選ぶ品は picking に入り、選んだ時に支払う */
+function buyOffer(S,i){
+  const o=S.offers[i],p=offerPrice(S,o);
+  if(!o||o.sold||S.funds<p)return false;
+  if(o.kind==='rewrite'||o.kind==='gold'){S.picking={...o,i,price:p};return true}
+  S.funds-=p;o.sold=true;
+  if(o.kind==='throw')S.throwsMax++;
+  if(o.kind==='bowl')S.deep=true;
+  return true;
+}
+function pickFace(S,di,fi){
+  const k=S.picking;if(!k)return false;
+  const d=S.dice[di];
+  if(k.kind==='rewrite'){if(d.faces[fi]===k.num)return false;d.faces[fi]=k.num}
+  else{if(d.gold[fi])return false;d.gold[fi]=1}
+  S.funds-=k.price;S.offers[k.i].sold=true;S.picking=null;
+  return true;
+}
+const canLoan=S=>!S.loanUsed&&S.table+1<FINAL_TABLE;
+function takeLoan(S){
+  if(!canLoan(S))return false;
+  const L=loanAmount(S.table+1);
+  S.funds+=L;S.debt=L*LOAN_RATE;S.loanTable=S.table+1;S.loanUsed=true;S.peak=Math.max(S.peak,S.funds);
+  return true;
+}
+function repay(S){
+  if(!S.debt||S.funds<S.debt)return false;
+  S.funds-=S.debt;S.debt=0;
+  return true;
+}
+function leaveShop(S){
+  S.table++;S.hand=0;S.leftBonus=0;S.justWon=false;S.picking=null;
+  if(S.funds<minBetOf(S.table))return lose(S,'最低の賭け金に届きません');
+  beginHand(S);
+  return [];
+}
+
+/* main */
+// 180×320の縦画面。Canvasへ描き、整数倍で拡大する。
+
+
+
+
+
+
+const W=180,MIN_H=320,MAX_H=430;
+const REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+const live=document.getElementById('live');
+let H=MIN_H,E=0,scale=1;
+const RGB=NAMES.map(n=>{const h=PALETTE[n];return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]});
+
+/* スプライトをCanvasへ。キャッシュして1回だけ変換する */
+const cache=new Map();
+function toCanvas(s){
+  const c=document.createElement('canvas');c.width=s.w;c.height=s.h;
+  const g=c.getContext('2d'),im=g.createImageData(s.w,s.h);
+  for(let i=0;i<s.px.length;i++){
+    const p=s.px[i];
+    if(p===T)continue;
+    const r=RGB[p];im.data[i*4]=r[0];im.data[i*4+1]=r[1];im.data[i*4+2]=r[2];im.data[i*4+3]=255;
+  }
+  g.putImageData(im,0,0);
+  return c;
+}
+function spr(key,make){let c=cache.get(key);if(!c){c=toCanvas(make());cache.set(key,c)}return c}
+const hex=n=>PALETTE[n];
+function fill(x,y,w,h,n){ctx.fillStyle=hex(n);ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
+function img(c,x,y){ctx.drawImage(c,Math.round(x),Math.round(y))}
+
+/* 数の表記。4桁で丸め、大きな数は万進の単位にする */
+const UNITS=[[1e48,'極'],[1e44,'載'],[1e40,'正'],[1e36,'澗'],[1e32,'溝'],[1e28,'穣'],[1e20,'垓'],[1e16,'京'],[1e12,'兆'],[1e8,'億'],[1e5,'万']];
+function numStr(x){
+  x=Math.floor(x);
+  if(x>=1e52)return x.toExponential(1);
+  for(const [v,u] of UNITS){
+    if(x>=v){
+      const d=u==='万'?1e4:v,q=x/d;
+      return (q>=100?Math.floor(q):q>=10?q.toFixed(1):q.toFixed(2))+u;
+    }
+  }
+  return x.toLocaleString('en-US');
+}
+const yen=x=>'¥'+numStr(x);
+const mul=m=>'×'+(m<100?(Math.round(m*10)/10):numStr(m));
+const pct=x=>Math.round(x*100)+'%';
+// 3つの確率の表示を合計100%にそろえる
+function pct3(o){
+  const v=[o.w,o.d,o.l].map(x=>x*100),f=v.map(Math.floor);
+  let rest=100-f.reduce((a,b)=>a+b,0);
+  v.map((x,i)=>[x-f[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(rest>0){f[i]++;rest--}});
+  return f;
+}
+
+/* 状態 */
+let S=newRun();
+const V={funds:S.funds,dice:[],stamp:null,dealerDice:null,dealerName:'',expr:'normal',busy:false,step:0,msg:'',pressed:null,overflow:0,bonus:null,coins:[],shakeUntil:0,shakeAmp:0,ff:false};
+const speed=()=>window.__fast?0.05:V.ff?0.3:1;
+const sleep=ms=>new Promise(r=>setTimeout(r,(REDUCED?Math.min(ms,80):ms)*speed()));
+const rnd=n=>Math.floor(Math.random()*n);
+
+/* 丼の中の賽 */
+function diePositions(n){
+  const cx=BOWL.cx,cy=BOWL.cy+3,pts=[];
+  if(n<=3){
+    const base=[[-30,-11],[28,-8],[-1,12]];
+    for(let i=0;i<n;i++)pts.push([cx+base[i][0]+rnd(7)-3,cy+base[i][1]+rnd(5)-2]);
+    return pts;
+  }
+  const rx=n<=12?48:61,ry=n<=12?22:27,off=Math.random()*6.28;
+  for(let i=0;i<n;i++){
+    const r=Math.sqrt((i+.5)/n),th=off+i*2.39996;
+    pts.push([cx+Math.cos(th)*r*rx,cy+Math.sin(th)*r*ry]);
+  }
+  return pts;
+}
+const sizeFor=n=>n<=4?'L':n<=12?'M':'S';
+function dieCanvas(size,die,top,k,state){
+  if(size==='S'){
+    const n=die.faces[top],g=!!die.gold[top];
+    return spr(`S${n}${state}${g}`,()=>flatDie(n,state,g));
+  }
+  const W2=size==='L'?30:18,[l,r]=sideFaces(top,k),a=die.faces[top],b=die.faces[l],c=die.faces[r],g=[!!die.gold[top],!!die.gold[l],!!die.gold[r]];
+  return spr(`${size}${a}${b}${c}${state}${g}`,()=>cubeDie(W2,a,b,c,state,g));
+}
+const PLAIN_DIE={faces:[1,2,3,4,5,6],gold:[0,0,0,0,0,0]};
+async function throwAnim(items,opt={}){
+  const n=items.length,pts=diePositions(n),now=performance.now(),dur=(REDUCED?0:(opt.dur||430))*speed();
+  V.stamp=null;
+  V.dice=items.map((it,i)=>{
+    const a=Math.random()*6.28,rim=.72;
+    return {...it,state:'normal',size:sizeFor(n),k:rnd(4),
+      fx:BOWL.cx+Math.cos(a)*BOWL.innerX*rim,fy:BOWL.cy+Math.sin(a)*BOWL.innerY*rim,
+      x:pts[i][0],y:pts[i][1],start:now+i*Math.min(14,160/n)*speed(),dur,tumble:0,lastSwap:0,fakeTop:rnd(6)};
+  });
+  sfx.rattle(n);
+  await sleep(opt.dur||430);
+  await new Promise(r=>setTimeout(r,Math.min(30,n*2)*speed()));
+  V.dice.forEach(d=>d.landed=true);
+  sfx.clack(n);
+}
+function drawDice(now,over=false){
+  const list=V.dice.filter(d=>!!d.over===over).map(d=>{
+    const t=d.landed?1:Math.max(0,Math.min(1,(now-d.start)/Math.max(1,d.dur)));
+    let x=d.fx+(d.x-d.fx)*t,y=d.fy+(d.y-d.fy)*t;
+    let z=d.landed?0:Math.abs(Math.sin(t*Math.PI*2.5))*(1-t)*22;
+    if(d.over&&!d.landed)z=Math.sin(t*Math.PI)*26;
+    if(d.hop){const h=(now-d.hop)/170;if(h>=0&&h<1)z+=Math.sin(h*Math.PI)*6}
+    return {d,t,x,y,z};
+  }).sort((a,b)=>a.y-b.y);
+  for(const o of list){
+    const d=o.d;
+    let top=d.top;
+    if(!d.landed&&o.t<1){
+      if(now-d.lastSwap>55+o.t*60){d.fakeTop=rnd(6);d.k=rnd(4);d.lastSwap=now}
+      top=d.fakeTop;
+    }
+    const c=dieCanvas(d.size,d.die,top,d.k,d.state);
+    const ox=-Math.floor(c.width/2),oy=-Math.floor(c.height/2);
+    // 影
+    if(d.size!=='S'){fill(bx()+o.x-c.width*.42,by()+o.y+c.height*.5,c.width*.8,1,'wh2')}
+    img(c,bx()+o.x+ox,by()+o.y+oy-o.z);
+  }
+}
+const bx=()=>10;
+const by=()=>98+E;
+
+/* 出来事の再生 */
+async function play(events){
+  V.busy=true;
+  for(const ev of events){
+    if(ev.type==='dealerThrow'){
+      V.step=1;V.msg='親が振っています';V.dealerDice=null;V.dealerName='';
+      const info=dl(S),die={faces:info.faces,gold:PLAIN_DIE.gold};
+      const items=ev.v.map(f=>({die,top:info.faces.indexOf(f)}));
+      await throwAnim(items,{dur:320});
+      V.dealerDice=ev.v;V.dealerC=ev.c;
+      V.dealerName=ev.c.kind==='none'?'目なし':ev.c.name;
+      V.stamp=ev.c.kind==='none'?null:{text:'親 '+ev.c.name};
+      if(ev.c.kind==='zoro'||ev.c.kind==='shigoro'){V.expr='smug';sfx.bad()}
+      else if(ev.c.kind==='hifumi'){V.expr='worried';sfx.win(1)}
+      await sleep(260);
+    }else if(ev.type==='playerThrow'){
+      V.step=3;V.msg='';
+      const items=ev.rolls.map((r,i)=>({die:S.dice[i],top:r.i}));
+      await throwAnim(items);
+      const c=ev.c;
+      if(c.kind==='eye')V.dice.forEach((d,i)=>{d.state=ev.rolls[i].f===c.eye?'hit':'dim'});
+      if(c.kind==='zoro'||c.kind==='shigoro')V.dice.forEach(d=>{d.state='hit'});
+      V.stamp={text:c.name,good:c.kind!=='hifumi'&&c.kind!=='none'};
+      if(c.kind==='hifumi')sfx.bad();
+      await sleep(200);
+    }else if(ev.type==='bonus'){
+      await playBonus(ev);
+    }else if(ev.type==='settle'){
+      V.step=4;
+      if(ev.net>0){sfx.win(ev.kind==='bonus'?4:1);if(V.expr==='normal')V.expr='worried'}
+      else if(ev.net<0){sfx.bad();if(V.expr==='normal')V.expr='smug'}
+      await countFunds(ev.funds);
+    }else if(ev.type==='end'||ev.type==='shop'){
+      V.funds=S.funds;
+      if(ev.type==='shop'){sfx.win(3);if(S.justWon)burst(160,W/2,120)}
+      saveBest();
+    }
+  }
+  V.busy=false;
+  V.msg='';
+  say();
+}
+/* 大盤振る舞い。結果は決まっており、ここでは順に見せるだけ */
+const tierOf=m=>m>=10000?3:m>=200?2:m>=30?1:0;
+function burst(n,x,y){
+  if(REDUCED)return;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.28,v=.8+Math.random()*2.6;
+    V.coins.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.5,life:45+rnd(40)});
+  }
+  if(V.coins.length>220)V.coins.splice(0,V.coins.length-220);
+}
+function shake(amp,ms){if(REDUCED)return;V.shakeAmp=amp;V.shakeUntil=performance.now()+ms*speed()}
+async function playBonus(ev){
+  const b=V.bonus={M:ev.start,cap:ev.cap,n:3,face:ev.face,tier:0,pop:0,done:false,started:performance.now()};
+  V.expr='shock';V.step=3;V.msg=`${ev.face}が1個でも出れば続きます`;
+  sfx.jackpot();shake(2,260);
+  V.stamp={text:'大盤振る舞い',good:true};
+  await sleep(1000);
+  let k=0;
+  for(const st of ev.steps){
+    k++;
+    b.n=st.rolls.length;
+    const items=st.rolls.map((r,i)=>({die:S.dice[i%3],top:r.i}));
+    await throwAnim(items,{dur:Math.max(220,400-k*20)});
+    const hits=[];
+    V.dice.forEach((d,i)=>{if(st.rolls[i].f===ev.face)hits.push(d);else d.state='dim'});
+    const gap=Math.min(70,360/Math.max(1,hits.length));
+    for(let i=0;i<hits.length;i++){
+      hits[i].state='hit';hits[i].hop=performance.now();
+      sfx.hit(i+k);
+      await sleep(gap);
+    }
+    if(st.raw>0){
+      b.M=st.M;b.n=st.n;b.pop=performance.now();
+      b.tier=tierOf(b.M);
+      V.msg=`${ev.face}が${st.raw}個。賽が${st.raw}個増えます`;
+      if(st.hits>=3||b.tier>=2)shake(b.tier>=2?3:2,240);
+      burst(Math.min(70,6+st.hits*8),W/2,by()+40);
+      await sleep(Math.max(220,520-k*30));
+    }
+  }
+  // 終わり方は3種類
+  if(ev.why==='miss'){
+    V.msg=`${ev.face}が出ませんでした`;V.stamp={text:'打ち止め',good:true};
+    sfx.stop();await sleep(650);
+  }else if(ev.why==='shon'){
+    const d=V.dice[rnd(V.dice.length)],now=performance.now();
+    Object.assign(d,{over:true,landed:false,fx:d.x,fy:d.y,x:Math.random()<.5?-7:167,y:BOWL.h-8,start:now,dur:420*speed(),state:'hit'});
+    V.msg='賽が丼から飛び出しました';
+    sfx.clack(2);await sleep(420);
+    d.landed=true;
+    V.stamp={text:'ションベン'};shake(3,300);sfx.bad();await sleep(750);
+  }else{
+    V.msg=ev.cap===Infinity?'':'全賭けなら続いていました';
+    V.stamp={text:'上限 '+capLabel(ev.cap),good:true};
+    sfx.win(2);await sleep(850);
+  }
+  b.done=true;
+  burst(Math.min(200,50+Math.log10(b.M+1)*40),W/2,by()+30);
+}
+function saveBest(){try{const v=Number(localStorage.getItem('aotenjo-best'))||0;if(S.peak>v)localStorage.setItem('aotenjo-best',String(S.peak))}catch(e){}}
+function loadBest(){try{return Number(localStorage.getItem('aotenjo-best'))||0}catch(e){return 0}}
+function countFunds(to){
+  const from=V.funds;
+  if(REDUCED||from===to||window.__fast){V.funds=to;return Promise.resolve()}
+  return new Promise(res=>{
+    const t0=performance.now(),dur=Math.min(1000,300+Math.abs(Math.log10((to+1)/(from+1)))*260);
+    (function step(now){
+      const k=Math.min(1,(now-t0)/dur);
+      V.funds=k>=1?to:Math.exp(Math.log(from+1)+(Math.log(to+1)-Math.log(from+1))*(1-Math.pow(1-k,3)))-1;
+      if(k<1)requestAnimationFrame(step);else res();
+    })(t0);
+  });
+}
+function act(fn){
+  if(V.busy)return;
+  const ev=fn();
+  play(ev||[]);
+}
+function restart(){
+  S=newRun();window.__S=S;
+  Object.assign(V,{funds:S.funds,dice:[],stamp:null,dealerDice:null,dealerName:'',expr:'normal',busy:false,step:0,msg:'',bonus:null,coins:[],ff:false});
+  say();
+}
+function clearTable(){V.expr='normal';V.dice=[];V.stamp=null;V.dealerDice=null;V.dealerName='';V.step=0;V.bonus=null}
+function toNext(){
+  clearTable();
+  const ev=nextHand(S);play(ev);
+}
+
+/* 今やることの文章。18字×2行まで */
+function panel(){
+  const s=S.phase;
+  if(V.busy)return {lines:[V.msg]};
+  if(s==='ante'){
+    const v=S.anteVal,allin=v>=S.funds;
+    const tail=allin?'全賭け。倍率の上限なし':v*3>=S.funds?'親を見て全賭けまで可':`親を見て${yen(Math.min(v*3,S.funds))}まで増額可`;
+    const head=S.stay?`居座り中 勝つと+1倍 ${yen(v)}`:`賭け金 ${yen(v)}`;
+    return {lines:[head,tail]};
+  }
+  if(s==='raise'){
+    const d=S.dealer,tie=dl(S).tie;
+    const cond=d.eye===0?'親は目なし。目が出れば勝ち':d.eye===6?'親は目6。役が要ります':`親は目${d.eye}。目${d.eye+1}以上で勝ち`;
+    return {lines:[cond+(tie?'':'')],odds:S.dist};
+  }
+  if(s==='throw')return {lines:[S.cur?`役なし。あと${S.throwsLeft}回振れます`:'賽を振ってください'],odds:S.again};
+  if(s==='decide'){
+    const o=standOutcome(S.cur.eye,S.dealer.eye,dl(S).tie);
+    const now=o.w?'今なら勝ち':o.d?'今なら引き分け':'今なら負け';
+    return {lines:[`${S.cur.name}。${now}。振り直すと`],odds:S.again};
+  }
+  if(s==='result'){
+    const r=S.result;
+    const f=r.formula&&typeof r.formula==='object'?`${yen(r.formula.wager)} ${mul(r.formula.rate)}`:(r.formula||'');
+    return {lines:[...wrapText(r.text,W-12).slice(0,1),f||wrapText(r.text,W-12)[1]||'']};
+  }
+  return {lines:['']};
+}
+function say(){
+  const p=panel();
+  const q=p.odds?pct3(p.odds):null;
+  const t=p.lines.filter(Boolean).join(' ')+(q?` 勝ち${q[0]}% 分け${q[1]}% 負け${q[2]}%`:'');
+  if(live.textContent!==t)live.textContent=t;
+}
+
+/* 操作 */
+function controls(){
+  if(S.phase==='end')return [{id:'retry',x:2,y:H-50,w:176,h:46,label:'もう一度借りて始める',variant:'main',primary:true,fn:()=>{restart()}}];
+  if(V.busy)return [];
+  if(S.phase==='shop')return shopControls();
+  const y=244+E,s=S.phase;
+  if(s==='ante'){
+    const opts=anteOptions(S),out=[];
+    opts.forEach((o,i)=>{
+      out.push({id:'a'+i,x:2+i*35.4,y,w:34,h:30,label:o.label,sub:numStr(o.amount),variant:o.amount===S.anteVal?'sel':'normal',fn:()=>{S.anteVal=o.amount;say()},keep:true});
+    });
+    const cleared=S.funds>=goal(S);
+    const bet={id:'bet',x:2,y:y+32,w:cleared?104:176,h:42,label:'この額で賭ける',variant:'main',primary:true,fn:()=>act(()=>placeAnte(S,S.anteVal))};
+    out.push(bet);
+    if(cleared)out.push({id:'leave',x:108,y:y+32,w:70,h:42,label:'早上がり',sub:'+'+yen(earlyLeaveBonus(S.table,S.hand)),variant:'normal',fn:()=>act(()=>leaveEarly(S))});
+    return out;
+  }
+  if(s==='raise'){
+    const o=raiseOptions(S),n=o.length+1,w=Math.floor((176-(n-1)*2)/n),out=[];
+    o.forEach((r,i)=>out.push({id:'r'+i,x:2+i*(w+2),y,w,h:74,label:r.label,sub:yen(r.w),sub2:capLabel(r.cap),variant:r.w>=S.funds?'danger':'normal',primary:i===0,fn:()=>act(()=>raise(S,r.w))}));
+    out.push({id:'fold',x:2+o.length*(w+2),y,w,h:74,label:'降りる',sub:yen(Math.ceil(S.ante/2)),sub2:'払う',variant:'quiet',fn:()=>act(()=>fold(S))});
+    return out;
+  }
+  if(s==='throw')return [{id:'throw',x:2,y:y+6,w:176,h:66,label:'賽を振る',variant:'main',primary:true,fn:()=>act(()=>throwDice(S))}];
+  if(s==='decide'){
+    const o=standOutcome(S.cur.eye,S.dealer.eye,dl(S).tie);
+    return [
+      {id:'stand',x:2,y:y+2,w:87,h:72,label:'この目で勝負',sub:o.w?'勝ち確定':o.d?'引き分け':'負け確定',variant:o.w?'main':'normal',primary:!!o.w,fn:()=>act(()=>stand(S))},
+      {id:'again',x:91,y:y+2,w:87,h:72,label:'もう一振り',sub:`残り${S.throwsLeft}回`,variant:o.w?'normal':'main',primary:!o.w,fn:()=>act(()=>throwDice(S))}
+    ];
+  }
+  if(s==='result'){
+    const label=S.funds<=0?'結果を見る':S.hand+1>=HANDS_PER_TABLE?(S.funds>=goal(S)?'店へ進む':'結果を見る'):'次の勝負へ';
+    return [{id:'next',x:2,y:y+6,w:176,h:66,label,variant:'main',primary:true,fn:toNext}];
+  }
+  return [];
+}
+const OFFER_TEXT=o=>({
+  rewrite:[`面を${o.num}に書き換える`,`好きな賽の1面を${o.num}にします。ゾロ目は増えますが、低い目やヒフミも増えることがあります。`],
+  gold:['金箔を貼る','選んだ面が出ると払いが+1倍。大盤振る舞いでは当たり2個分です。'],
+  throw:['予備の一投','1勝負で振れる回数が1回増えます。'],
+  bowl:['深い丼','大盤振る舞いがションベンで終わる確率が半分になります。']
+}[o.kind]);
+function shopControls(){
+  const bottom=H-4,out=[];
+  if(S.picking){
+    S.dice.forEach((d,di)=>d.faces.forEach((f,fi)=>{
+      const same=S.picking.kind==='rewrite'?f===S.picking.num:!!d.gold[fi];
+      out.push({id:`f${di}${fi}`,x:12+fi*27,y:104+di*30,w:25,h:28,label:'',variant:same?'off':'normal',face:{f,gold:!!d.gold[fi]},fn:()=>{if(pickFace(S,di,fi)){V.funds=S.funds;sfx.clack(1)}}});
+    }));
+    out.push({id:'cancel',x:2,y:bottom-40,w:176,h:40,label:'やめる',variant:'quiet',primary:true,fn:()=>{S.picking=null}});
+    return out;
+  }
+  S.offers.forEach((o,i)=>{
+    const [t]=OFFER_TEXT(o),p=offerPrice(S,o);
+    out.push({id:'o'+i,x:2,y:103+i*27,w:176,h:25,label:t,sub:o.sold?'購入済み':yen(p),variant:o.sold?'off':i===S.selected&&!V.loanAsk?'sel':'normal',fn:()=>{S.selected=i;V.loanAsk=false}});
+  });
+  const o=S.offers[S.selected],p=offerPrice(S,o),can=!o.sold&&S.funds>=p;
+  const y=bottom-92;
+  out.push({id:'buy',x:2,y,w:176,h:26,label:o.sold?'購入済み':can?`買う ${yen(p)}`:'所持金が足りません',variant:can?'normal':'off',fn:()=>{if(can&&buyOffer(S,S.selected)){V.funds=S.funds;sfx.clack(1)}}});
+  const rowY=y+28;
+  if(S.debt)out.push({id:'repay',x:2,y:rowY,w:87,h:28,label:'借金を返す',sub:yen(S.debt),variant:S.funds>=S.debt?'normal':'off',fn:()=>{if(repay(S))V.funds=S.funds}});
+  else if(canLoan(S)){const L=loanAmount(S.table+1);out.push({id:'loan',x:2,y:rowY,w:87,h:28,label:V.loanAsk?'本当に借りる':'闇金で借りる',sub:'+'+yen(L),variant:'danger',fn:()=>{if(!V.loanAsk){V.loanAsk=true;return}V.loanAsk=false;if(takeLoan(S)){V.funds=S.funds;sfx.bad()}}})}
+  else out.push({id:'noloan',x:2,y:rowY,w:87,h:28,label:'闇金は使えません',variant:'off',fn:()=>{}});
+  out.push({id:'leaveShop',x:91,y:rowY,w:87,h:28,label:'次の卓へ',variant:'main',primary:true,fn:()=>{V.loanAsk=false;clearTable();play(leaveShop(S));V.funds=S.funds}});
+  return out;
+}
+let buttons=[];
+function vpos(e){
+  const r=cv.getBoundingClientRect();
+  return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H];
+}
+const hitAt=(x,y)=>buttons.find(b=>x>=b.x&&x<b.x+b.w&&y>=b.y&&y<b.y+b.h);
+cv.addEventListener('pointerdown',e=>{
+  sfx.init();const [x,y]=vpos(e);
+  if(V.help){V.help=false;return}
+  if(y<14&&x>=W-54&&x<W-30){muted=!muted;return}
+  if(y<14&&x>=W-74&&x<W-56){V.help=true;return}
+  const b=hitAt(x,y);V.pressed=b?b.id:null;
+  if(V.bonus&&!V.bonus.done)V.ff=true;
+});
+window.addEventListener('pointerup',e=>{V.ff=false;const id=V.pressed;V.pressed=null;if(!id)return;const [x,y]=vpos(e);const b=hitAt(x,y);if(b&&b.id===id){sfx.tap();b.fn();say()}});
+window.addEventListener('keydown',e=>{
+  sfx.init();
+  if(V.help){V.help=false;return}
+  if(e.key==='Enter'||e.code==='Space'){const b=buttons.find(b=>b.primary);if(b){e.preventDefault();b.fn();say()}}
+  else if(/^[1-9]$/.test(e.key)){const b=buttons[Number(e.key)-1];if(b){b.fn();say()}}
+});
+
+/* 描画 */
+function drawTag(b){
+  const pressed=V.pressed===b.id,w=Math.round(b.w),h=Math.round(b.h);
+  const c=spr(`tag${w}x${h}${b.variant}${pressed}`,()=>tagSprite(w,h,b.variant,pressed));
+  const y=Math.round(b.y)+(pressed?2:0),x=Math.round(b.x);
+  img(c,x,y);
+  if(b.face){
+    const fc=spr(`S${b.face.f}normal${b.face.gold}`,()=>flatDie(b.face.f,'normal',b.face.gold));
+    ctx.drawImage(fc,x+Math.floor((w-18)/2),y+Math.floor((h-18)/2)-1,18,18);
+    return;
+  }
+  const dark=b.variant==='danger'||b.variant==='quiet'||b.variant==='off'?'wh':'w0';
+  const lines=[[b.label,dark]];
+  if(b.sub)lines.push([b.sub,dark]);
+  if(b.sub2)lines.push([b.sub2,dark]);
+  const lh=h<30&&lines.length>1?11:11,total=lines.length*lh;
+  let ty=y+Math.max(1,Math.floor((h-3-total)/2));
+  for(const [t,col] of lines){
+    const tw=textWidth(t);
+    if(tw>w-2){V.overflow++;window.__overflowText=t}
+    drawText(ctx,t,x+Math.round((w-tw)/2),ty,col);
+    ty+=lh;
+  }
+}
+function drawHUD(){
+  fill(0,0,W,47,'ink0');
+  drawText(ctx,yen(V.funds),3,1,'kin1',2);
+  const tl=S.table<=FINAL_TABLE?`卓${S.table+1}/8`:`延長${S.table-FINAL_TABLE}`;
+  drawText(ctx,tl,W-2-textWidth(tl),1,'wh');
+  const h=`勝${Math.min(S.hand+1,HANDS_PER_TABLE)}/${HANDS_PER_TABLE}`;
+  drawText(ctx,h,W-2-textWidth(h),11,'wh');
+  const t=goal(S),rem=t-S.funds;
+  const q=rem>0?`ノルマ${yen(t)} あと${yen(rem)}`:`ノルマ${yen(t)} 達成`;
+  drawText(ctx,q,3,22,rem>0?'wh':'kin2');
+  fill(3,33,W-6,3,'ai');
+  fill(3,33,Math.max(0,Math.min(1,S.funds/t))*(W-6),3,rem>0?'w5':'kin1');
+  // 進行表示
+  if(S.phase==='shop'||S.phase==='end')return;
+  const steps=['賭ける','親','増やす','振る','精算'],cur=stepIndex();
+  const sw=W/5;
+  steps.forEach((s,i)=>{
+    const x=i*sw;
+    fill(x+1,37,sw-2,10,i===cur?'kin1':'ink1');
+    const tw=textWidth(s);
+    drawText(ctx,s,Math.round(x+(sw-tw)/2),37,i===cur?'w0':i<cur?'gr1':'wh2');
+  });
+}
+function stepIndex(){
+  if(V.busy)return V.step;
+  return {ante:0,raise:2,throw:3,decide:3,result:4,end:4}[S.phase]??0;
+}
+function drawStage(now){
+  const b=V.bonus,live=b&&!b.done,strip=E>=26&&!live?24:0,dy=47+strip,dh=49+E-strip;
+  if(strip){
+    fill(0,47,W,strip,'ink0');
+    drawText(ctx,'ピンゾロ×5 ゾロ目×3 シゴロ×2',3,48,'kin2');
+    drawText(ctx,'目×1 目なし-1 ヒフミ-2',3,59,'wh2');
+  }
+  img(spr('bd'+dh,()=>backdrop(W,dh)),0,dy);
+  // 卓
+  const tableY=96+E;
+  img(spr('wood'+(H-tableY),()=>wood(W,H-tableY)),0,tableY);
+  fill(0,tableY,W,1,'w5');
+  // 放射。通常時は描かない。段階が上がるほど広く、派手になる
+  if(live){
+    const fr=REDUCED?0:Math.floor(now/90)%8,cy=by()+BOWL.cy,t=b.tier;
+    const key=(n,a,c)=>spr(`ray${n}${a}${c}${fr}${H}`,()=>raysSprite(W,H,W/2,cy,fr,C[a],c?C[c]:T));
+    if(t===0){ctx.save();ctx.beginPath();ctx.rect(0,tableY,W,H-tableY);ctx.clip();img(key('t','w3',null),0,0);ctx.restore()}
+    else if(t===1)img(key('a','shu0',null),0,0);
+    else if(t===2)img(key('b','shu1','kin0'),0,0);
+    else img(key('c','kin1','shu1'),0,0);
+    fill(0,tableY,W,1,'kin2');
+  }
+  // 親
+  const info=dl(S);
+  img(spr('dealer'+V.expr+info.id,()=>dealerSprite(V.expr,info.id)),42,tableY-40);
+  drawText(ctx,info.name,2,dy+1,'wh');
+  if(V.dealerDice){
+    const eye=V.dealerC&&V.dealerC.kind==='eye'?V.dealerC.eye:null;
+    V.dealerDice.forEach((f,i)=>{
+      const st=eye==null?'normal':(f===eye?'hit':'dim');
+      img(spr(`S${f}${st}false`,()=>flatDie(f,st,false)),W-34+i*11,dy+13+E*0);
+    });
+    const tw=textWidth(V.dealerName);
+    drawText(ctx,V.dealerName,W-2-tw,dy+1,'kin2');
+  }
+  // 丼
+  const bX=bx(),bY=by();
+  img(spr('bowlBack',bowlBack),bX,bY);
+  img(spr('bowlRim',bowlRimBack),bX,bY);
+  drawDice(now);
+  img(spr('bowlFront',bowlFront),bX,bY);
+  drawDice(now,true);
+  if(V.stamp){
+    const t=V.stamp.text,tw=textWidth(t),x=Math.round((W-tw)/2);
+    fill(x-5,bY+85,tw+10,14,'wh');
+    fill(x-5,bY+85,tw+10,1,V.stamp.good?'gosu':'shu1');fill(x-5,bY+98,tw+10,1,V.stamp.good?'gosu':'shu1');
+    fill(x-5,bY+85,1,14,V.stamp.good?'gosu':'shu1');fill(x+tw+4,bY+85,1,14,V.stamp.good?'gosu':'shu1');
+    drawText(ctx,t,x,bY+87,V.stamp.good?'gosu':'shu1');
+  }
+}
+function drawBonusHead(now){
+  const b=V.bonus,t=mul(b.M);
+  let sc=b.tier>=2?4:b.tier===1?3:2;
+  if(E<13&&sc>3)sc=3;
+  while(sc>1&&textWidth(t)*sc>W-4)sc--;
+  const h=11+10*sc+12;
+  fill(0,47,W,h,'ink0');
+  drawText(ctx,'大盤振る舞い',Math.round((W-textWidth('大盤振る舞い'))/2),47,'kin2');
+  const popped=now-b.pop<130;
+  drawText(ctx,t,Math.round((W-textWidth(t)*sc)/2),58+(popped?-1:0),popped?'wh':'kin1',sc);
+  const sub=`賽${b.n}個  上限${capLabel(b.cap)}`;
+  drawText(ctx,sub,Math.round((W-textWidth(sub))/2),58+10*sc,'wh1');
+}
+function drawCoins(){
+  for(const c of V.coins){c.vy+=.09;c.x+=c.vx;c.y+=c.vy;c.life--;
+    fill(c.x,c.y,3,2,'kin1');fill(c.x,c.y,1,1,'kin2');}
+  V.coins=V.coins.filter(c=>c.life>0&&c.y<H+4);
+}
+function drawBorder(now){
+  if(V.bonus.tier<2)return;
+  const zig=V.bonus.tier>=3,ph=REDUCED?0:Math.floor(now/120)%2;
+  for(let x=0;x<W;x+=4){const on=(Math.floor(x/4)+ph)%2===0;fill(x,0,4,zig&&on?3:1,on?'kin1':'shu1');fill(x,H-(zig&&on?3:1),4,zig&&on?3:1,on?'kin1':'shu1')}
+  for(let y=0;y<H;y+=4){const on=(Math.floor(y/4)+ph)%2===0;fill(0,y,zig&&on?3:1,4,on?'kin1':'shu1');fill(W-(zig&&on?3:1),y,zig&&on?3:1,4,on?'kin1':'shu1')}
+}
+function drawPanel(){
+  const y=205+E,p=panel();
+  fill(1,y,W-2,38,'ink1');
+  fill(1,y,W-2,1,'w3');fill(1,y+37,W-2,1,'w3');
+  if(p.odds){
+    drawText(ctx,p.lines[0]||'',4,y+2,'wh');
+    const o=p.odds,q=pct3(o),txt=`勝${q[0]}% 分${q[1]}% 負${q[2]}%`;
+    drawText(ctx,txt,4,y+13,'kin2');
+    const bw=W-10;let x=5;
+    const seg=[[o.w,'kin1'],[o.d,'wh2'],[o.l,'shu1']];
+    for(const [v,col] of seg){const sw=Math.round(v*bw);if(sw>0)fill(x,y+25,sw,8,col);x+=sw}
+  }else{
+    drawText(ctx,p.lines[0]||'',4,y+4,'wh');
+    if(p.lines[1])drawText(ctx,p.lines[1],4,y+18,S.phase==='result'&&S.result&&S.result.net>0?'kin2':'wh1');
+  }
+  if(S.phase==='result'&&!V.busy){
+    const n=S.result.net,t=(n>0?'+':n<0?'-':'±')+yen(Math.abs(n)),tw=textWidth(t)*2;
+    if(tw<W-6){
+      fill(Math.round((W-tw)/2)-4,y-22,tw+8,21,'ink0');
+      drawText(ctx,t,Math.round((W-tw)/2),y-22,n>0?'kin1':n<0?'shu1':'wh',2);
+    }
+  }
+}
+function drawEnd(){
+  fill(0,47,W,H-47,'ink0');
+  const title=S.won?'延長戦で破産':S.table>0?'賭場を追われました':'ここで終了',tw=textWidth(title);
+  drawText(ctx,title,Math.round((W-tw)/2),58,'shu1');
+  let y=74;
+  for(const l of wrapText(S.endReason,W-16)){drawText(ctx,l,8,y,'wh');y+=12}
+  const L=S.lastInfo;
+  if(L&&L.net<0){
+    const t=L.kind==='dealerRole'?`最後は所持金の${L.pct}%を賭けた所へ親の役が来ました。`:L.win!=null?`最後は勝率${pct(L.win)}の場面で所持金の${L.pct}%を賭けました。`:'';
+    for(const l of wrapText(t,W-16)){drawText(ctx,l,8,y,'wh1');y+=12}
+  }
+  y+=6;
+  const best=Math.max(loadBest(),S.peak);
+  const rows=[['到達した卓',String(S.table+1)],['最高所持金',yen(S.peak)],['大盤振る舞い',S.bonusCount+'回'],['最高倍率',S.bestMult?mul(S.bestMult):'なし'],['自己ベスト',yen(best)]];
+  rows.forEach(([k,v])=>{drawText(ctx,k,8,y,'wh2');drawText(ctx,v,W-8-textWidth(v),y,'wh');y+=14});
+}
+function drawShop(){
+  fill(0,47,W,H-47,'ink1');
+  const next=dealerAt(S.order,S.table+1);
+  const head=S.justWon?'借金完済。ここから延長戦':`卓${S.table+1}を突破`+(S.leftBonus?` 利息+${yen(S.leftBonus)}`:'');
+  fill(0,37,W,10,'ink0');
+  drawText(ctx,head,3,37,'kin2');
+  drawText(ctx,'次の親 '+next.name,3,48,'wh');
+  next.faces.forEach((f,i)=>img(spr(`S${f}normalfalse`,()=>flatDie(f,'normal',false)),W-68+i*11,49));
+  wrapText(next.desc,W-6).slice(0,2).forEach((l,i)=>drawText(ctx,l,3,59+i*11,'wh1'));
+  const n=goal(S,S.table+1),m=S.debt&&S.table+1>S.loanTable?'借金込み':`最低${yen(minBetOf(S.table+1))}`;
+  drawText(ctx,`次のノルマ ${yen(n)}`,3,81,'wh');
+  drawText(ctx,m,W-3-textWidth(m),81,S.debt&&S.table+1>S.loanTable?'shu1':'wh2');
+  if(S.picking){
+    const pk=S.picking;
+    drawText(ctx,pk.kind==='rewrite'?`${pk.num}に書き換える面を選択`:'金箔を貼る面を選択',3,92,'kin2');
+    const names=['壱','弐','参'];
+    names.forEach((t,i)=>drawText(ctx,t,1,112+i*30,'wh'));
+    return;
+  }
+  const o=S.offers[S.selected],y=103+27*3+2,bottom=H-4-92;
+  let desc=OFFER_TEXT(o)[1],col='wh1';
+  if(V.loanAsk){
+    const L=loanAmount(S.table+1);
+    desc=`今${yen(L)}受け取り、次の次の卓からノルマ+${yen(L*LOAN_RATE)}。以後1卓ごとに1.5倍。店で全額返せば消えます。`;col='kin2';
+  }else if(S.debt&&S.table+1<=S.loanTable)desc=`借金${yen(S.debt)}は次の次の卓から加算。`+desc;
+  fill(1,y,W-2,Math.max(10,bottom-y-2),'ink0');
+  wrapText(desc,W-8).slice(0,Math.floor((bottom-y-2)/11)).forEach((l,i)=>drawText(ctx,l,4,y+1+i*11,col));
+}
+function drawHelp(){
+  fill(0,0,W,H,'ink0');
+  drawText(ctx,'役と払い',4,3,'kin1',2);
+  const rows=[['ピンゾロ',[1,1,1],'×5'],['ゾロ目',[4,4,4],'×3'],['シゴロ',[4,5,6],'×2'],['目',[2,2,5],'×1'],['目なし',[1,3,6],'-1'],['ヒフミ',[1,2,3],'-2']];
+  rows.forEach(([n,d,m],i)=>{
+    const y=28+i*14;
+    drawText(ctx,n,4,y,'wh');
+    d.forEach((f,k)=>img(spr(`S${f}normalfalse`,()=>flatDie(f,'normal',false)),74+k*11,y));
+    drawText(ctx,m,W-6-textWidth(m),y,m[0]==='×'?'kin2':'shu1');
+  });
+  const info=dl(S),z=zoroChance(S.dice);
+  const notes=['目は揃わない1個が点数。親より大きければ勝ち。','ゾロ目で大盤振る舞い。倍率上限は賭け金が所持金の25%未満で×10、25%以上×30、50%以上×100、全賭けで上限なし。','増額は最初の賭け金の3倍まで。','ノルマ達成後、居座ると払い+1倍。早上がりは利息。'];
+  let y=114;
+  for(const t of notes){for(const l of wrapText(t,W-8)){drawText(ctx,l,4,y,'wh1');y+=11}y+=2}
+  for(const l of wrapText(`今の親 ${info.name}:${info.desc}`,W-8).slice(0,3)){drawText(ctx,l,4,y,'kin2');y+=11}
+  y+=2;
+  S.dice.forEach((d,di)=>{d.faces.forEach((f,fi)=>img(spr(`S${f}normal${!!d.gold[fi]}`,()=>flatDie(f,'normal',!!d.gold[fi])),4+fi*11,y));y+=10});
+  drawText(ctx,`ゾロ目率${(z*100).toFixed(1)}%`,76,y-20,'wh');
+  drawText(ctx,`振る回数${S.throwsMax}回`,76,y-10,'wh');
+  drawText(ctx,'どこかを押すと閉じます',4,H-14,'wh2');
+}
+function frame(now){
+  ctx.imageSmoothingEnabled=false;
+  fill(0,0,W,H,'ink0');
+  if(S.phase==='end'){
+    drawHUD();drawEnd();
+  }else if(S.phase==='shop'){
+    drawHUD();drawShop();
+  }else{
+    const shaking=now<V.shakeUntil;
+    if(shaking){const a=V.shakeAmp;ctx.save();ctx.translate(rnd(a*2+1)-a,rnd(a*2+1)-a)}
+    drawStage(now);
+    if(shaking)ctx.restore();
+    drawHUD();
+    drawPanel();
+    if(V.bonus&&!V.bonus.done){
+      // 木札は沈めて、押せないことを形で伝える
+      for(let i=0;i<4;i++)img(spr('sunk',()=>tagSprite(42,44,'off')),3+i*44,H-22);
+      drawText(ctx,'長押しで早送り',4,H-11,'wh2');
+    }
+    if(V.bonus)drawBonusHead(now);
+  }
+  buttons=V.help?[]:controls();
+  buttons.forEach(drawTag);
+  drawCoins();
+  if(V.bonus&&!V.bonus.done)drawBorder(now);
+  fill(W-73,1,16,11,'ai');drawText(ctx,'役',W-70,1,'wh');
+  drawText(ctx,muted?'音切':'音入',W-52,1,muted?'gr1':'wh2');
+  if(V.help)drawHelp();
+  if(window.__benchOn)window.__benchTick(now);
+  requestAnimationFrame(frame);
+}
+
+/* 整数倍で拡大。端末の実ピクセルで計算する */
+function resize(){
+  const dpr=window.devicePixelRatio||1,box=document.getElementById('stage');
+  const sw=box.clientWidth*dpr,sh=box.clientHeight*dpr;
+  scale=Math.max(1,Math.floor(Math.min(sw/W,sh/MIN_H)));
+  H=Math.max(MIN_H,Math.min(MAX_H,Math.floor(sh/scale)));
+  E=H-MIN_H;
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+  cv.style.width=(W*scale/dpr)+'px';
+  cv.style.height=(H*scale/dpr)+'px';
+}
+addEventListener('resize',resize);
+
+/* 音 */
+let muted=false;
+const sfx={ctx:null,
+  init(){if(!this.ctx){try{this.ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()},
+  noise(t,dur,vol,freq){if(!this.ctx||muted)return;const c=this.ctx,len=Math.max(1,c.sampleRate*dur|0),buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);const s=c.createBufferSource();s.buffer=buf;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=freq;f.Q.value=3;const g=c.createGain();g.gain.value=vol;s.connect(f);f.connect(g);g.connect(c.destination);s.start(c.currentTime+t)},
+  tone(t,freq,dur,vol,type='square'){if(!this.ctx||muted)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=freq;const at=c.currentTime+t;g.gain.setValueAtTime(vol,at);g.gain.exponentialRampToValueAtTime(.0008,at+dur);o.connect(g);g.connect(c.destination);o.start(at);o.stop(at+dur)},
+  rattle(n){const k=Math.min(10,3+n);for(let i=0;i<k;i++)this.noise(i*.032,.03,.22,2600+Math.random()*2400)},
+  clack(n){const k=Math.min(7,n);for(let i=0;i<k;i++)this.noise(i*.022,.05,.42,1700+Math.random()*1300)},
+  tap(){this.tone(0,880,.04,.05)},
+  hit(i){this.tone(0,330*Math.pow(1.06,Math.min(36,i*2)),.14,.08)},
+  stop(){this.tone(0,110,.5,.1,'triangle')},
+  win(l){[523,659,784,1047,1319].slice(0,l+2).forEach((f,i)=>this.tone(i*.07,f,.2,.07))},
+  bad(){this.tone(0,180,.3,.1,'sawtooth');this.tone(.1,120,.35,.09,'sawtooth')},
+  jackpot(){[392,523,659,784,1047,1319,1568].forEach((f,i)=>this.tone(i*.07,f,.26,.08))}
+};
+
+/* 検証用。48個の負荷測定と、画面の状態確認に使う */
+window.__S=S;
+window.__V=V;
+window.__buttons=()=>buttons;
+window.__scale=()=>({scale,H,E});
+window.__play=play;
+window.__burst=burst;
+window.__throwN=n=>{
+  const items=[];for(let i=0;i<n;i++)items.push({die:S.dice[i%3],top:rnd(6)});
+  return throwAnim(items);
+};
+window.__bench=(n,ms)=>new Promise(res=>{
+  let frames=0,last=performance.now(),worst=0,sum=0,count=0,t0=last;
+  V.busy=true;
+  const respawn=()=>{const items=[];for(let i=0;i<n;i++)items.push({die:S.dice[i%3],top:rnd(6)});throwAnim(items)};
+  respawn();const iv=setInterval(respawn,500);
+  window.__benchOn=true;
+  window.__benchTick=now=>{
+    const dt=now-last;last=now;frames++;if(frames>3){worst=Math.max(worst,dt);sum+=dt;count++}
+    if(now-t0>ms){window.__benchOn=false;clearInterval(iv);V.busy=false;V.dice=[];res({avg:sum/count,worst,frames:count})}
+  };
+});
+resize();say();requestAnimationFrame(frame);
+
+</script>
